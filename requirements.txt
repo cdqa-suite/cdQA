@@ -1,0 +1,7 @@
+pandas
+scikit-learn
+matplotlib
+pytorch-pretrained-bert
+beautifulsoup4
+tqdm
+prettytable
