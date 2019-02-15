@@ -22,7 +22,7 @@ def process(closest_docs_indices):
     table = prettytable.PrettyTable(['rank', 'index', 'title'])
     for i in range(len(closest_docs_indices)):
         index = closest_docs_indices[i]
-        title = df.iloc[int(index)]['article_title']
+        title = df.iloc[int(index)]['title']
         table.add_row([rank, index, title])
         rank+=1
     print(table)
