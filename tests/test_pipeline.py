@@ -1,4 +1,4 @@
-# from reading-comprehension.utils.converter import df2squad
+# from cdqa.utils.converter import df2squad
 
 # content of test_sample.py
 def inc(x):

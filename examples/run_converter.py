@@ -1,5 +1,5 @@
 import pandas as pd
-from reading-comprehension.utils.converter import df2squad
+from cdqa.utils.converter import df2squad
 
 df = pd.read_csv('data.csv')
 

@@ -7,13 +7,13 @@ def read(file):
 
 
 setup(
-    name='reading-comprehension',
+    name='cdqa',
     version='0.0.1',
     author='Félix MIKAELIAN',
     description='An end-to-end question answering system for the Bank that integrates BERT with classic IR methods 👓📚🏦',
     keywords='reading comprehension question answering deep learning natural language processing information retrieval bert',
     license='MIT',
-    url='https://github.com/fmikaelian/reading-comprehension',
+    url='https://github.com/fmikaelian/cdqa',
     packages=find_packages(),
     install_requires=read('requirements.txt').split()
 )

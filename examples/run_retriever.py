@@ -1,5 +1,5 @@
 import pandas as pd
-from reading-comprehension.retriever.tfidf_doc_ranker import train_document_retriever, predict_document_retriever
+from cdqa.retriever.tfidf_doc_ranker import train_document_retriever, predict_document_retriever
 
 df = pd.read_csv('data.csv')
 
