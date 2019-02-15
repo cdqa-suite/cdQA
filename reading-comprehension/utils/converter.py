@@ -10,7 +10,7 @@ def df2squad(df, version='v2.0', output_dir=None):
        version {string} -- the SQuAD dataset version format
 
    Keyword Arguments:
-       output_dir {string} -- Enable export of output. (default: {None})
+       output_dir {string} -- Enable export of output (default: {None})
 
    Returns:
        json_data -- A json object with SQuAD format
