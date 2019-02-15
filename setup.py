@@ -13,7 +13,7 @@ setup(
     description='An end-to-end question answering system for the Bank that integrates BERT with classic IR methods 👓📚🏦',
     keywords='reading comprehension question answering deep learning natural language processing information retrieval bert',
     license='MIT',
-    url='https://github.com/fmikaelian/cdqa',
+    url='https://github.com/fmikaelian/cdQA',
     packages=find_packages(),
     install_requires=read('requirements.txt').split()
 )
