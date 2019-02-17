@@ -28,7 +28,7 @@ def main():
 
     for asset in assets:
         print(asset.name, asset.url)
-        if os.path.splitext(asset.name)[1] == '.bin':
+        if (os.path.splitext(asset.name)[1] == '.bin') or (asset.name == 'bert_config.json'):
             directory = 'models'
         else:
             directory = 'logs'
