@@ -3,6 +3,8 @@ scikit-learn
 matplotlib
 pytorch-pretrained-bert
 beautifulsoup4
+lxml
 tqdm
-wget
 prettytable
+wget
+PyGithub
