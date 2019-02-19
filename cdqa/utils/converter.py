@@ -34,3 +34,8 @@ def df2squad(df, version='v2.0', output_dir=None):
            json.dump(json_data, outfile)
 
    return json_data
+
+def filter_paragraphs(paragraphs):
+    # filter out paragraphs shorter than 10 words and longer than 250 words
+    paragraphs_filtered = [paragraph for paragraph in paragraphs if len(paragraph.split()) >= 10 and len(paragraph.split()) <= 250]
+    return paragraphs_filtered
