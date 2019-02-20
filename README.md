@@ -8,6 +8,7 @@ An end-to-end closed-domain question answering system with BERT and classic IR m
 - [Installation](#installation)
 - [Repository Structure](#repository-structure)
 - [Getting started](#getting-started)
+- [Contributing](#contributing)
 - [References](#references)
 
 ## Installation
@@ -68,6 +69,20 @@ python cdqa/pipeline/download.py
 ```
 
 You can now execute the [`examples`](examples) or the [`pipeline`](cdqa/pipeline) steps to use the application.
+
+## Contributing
+
+To contribute to this repository, you will need to follow the git branch workflow:
+
+- Create a feature branch from `develop` branch with the name of the issue you want to fix.
+- Commit in this new feature branch until your fix is done
+- Open a pull request in order to merge you branch with the `develop` branch
+- Discuss with peers and update your code until pull request is accepted by repository admins.
+- Delete you feature branch.
+- Synchonise your repository with the latest `develop` changes.
+- Repeat!
+
+See more about this workflow in: https://guides.github.com/introduction/flow/
 
 ## References
 
