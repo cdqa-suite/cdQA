@@ -42,7 +42,7 @@ pip install .
 │   ├── scrapper
 │   │   ├── __init__.py
 │   │   └── bs4_scrapper.py --> the logic for the dataset scrapper
-│   └── utils
+│   └── utils --> utility functions used in the pipeline (to avoid flooding pipeline scripts)
 │       ├── __init__.py
 │       └── converter.py --> the logic for converting the dataset to SQuAD format
 ├── data --> the raw datasets
@@ -75,7 +75,7 @@ You can now execute the [`examples`](examples) or the [`pipeline`](cdqa/pipeline
 To contribute to this repository, you will need to follow the git branch workflow:
 
 - Create a feature branch from `develop` branch with the name of the issue you want to fix.
-- Commit in this new feature branch until your fix is done
+- Commit in this new feature branch until your fix is done while referencing the issue number in your commit message.
 - Open a pull request in order to merge you branch with the `develop` branch
 - Discuss with peers and update your code until pull request is accepted by repository admins.
 - Delete you feature branch.
