@@ -73,6 +73,6 @@ def fetch_bnpp_newsroom(output_dir=None):
     df['paragraphs'] = paragraphs
     
     if output_dir:
-        df.to_csv(os.path.join(output_dir, 'bnpp_newsroom_v1.0.csv'), index=False)
+        df.to_csv(os.path.join(output_dir, 'bnpp_newsroom-v1.0.csv'), index=False)
 
     return df
