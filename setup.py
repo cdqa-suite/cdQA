@@ -10,7 +10,7 @@ setup(
     name='cdqa',
     version='0.0.1',
     author='Félix MIKAELIAN',
-    description='An end-to-end question answering system for the Bank that integrates BERT with classic IR methods 👓📚🏦',
+    description='An end-to-end closed-domain question answering system with BERT and classic IR methods 📚',
     keywords='reading comprehension question answering deep learning natural language processing information retrieval bert',
     license='MIT',
     url='https://github.com/fmikaelian/cdQA',
