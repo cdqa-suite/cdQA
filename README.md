@@ -22,7 +22,7 @@ pip install .
 
 ## Repository Structure
 
-```shell
+```
 ├── LICENSE
 ├── README.md
 ├── cdqa
@@ -82,12 +82,12 @@ To contribute to this repository, you will need to follow the git branch workflo
 - Synchonise your repository with the latest `develop` changes.
 - Repeat!
 
-See more about this workflow in: https://guides.github.com/introduction/flow/
+See more about this workflow at https://guides.github.com/introduction/flow/
 
 ## References
 
 | Type              | Title                                                                                                                | Author                                                                                 | Year |
-|-------------------|----------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|------|
-| :newspaper: Paper | [End-to-End Open-Domain Question Answering with BERTserini]([link](https://arxiv.org/abs/1902.01718))                | Wei Yang, Yuqing Xie, Aileen Lin, Xingyu Li, Luchen Tan, Kun Xiong, Ming Li, Jimmy Lin | 2019 |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---- |
+| :newspaper: Paper | [End-to-End Open-Domain Question Answering with BERTserini](https://arxiv.org/abs/1902.01718)                        | Wei Yang, Yuqing Xie, Aileen Lin, Xingyu Li, Luchen Tan, Kun Xiong, Ming Li, Jimmy Lin | 2019 |
 | :newspaper: Paper | [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805) | Jacob Devlin, Ming-Wei Chang, Kenton Lee, Kristina Toutanova                           | 2018 |
 | :newspaper: Paper | [Neural Reading Comprehension and Beyond](https://cs.stanford.edu/people/danqi/papers/thesis.pdf)                    | Danqi Chen                                                                             | 2018 |
