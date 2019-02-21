@@ -3,6 +3,7 @@ import wget
 import requests
 from github import Github
 
+
 def download_squad_assets():
     squad_urls = [
         'https://rajpurkar.github.io/SQuAD-explorer/dataset/train-v1.1.json',
@@ -12,7 +13,9 @@ def download_squad_assets():
     for squad_url in squad_urls:
         wget.download(url=squad_url, out='data')
 
-    wget.download(url='https://github.com/allenai/bi-att-flow/blob/master/squad/evaluate-v1.1.py')
+    wget.download(
+        url='https://raw.githubusercontent.com/allenai/bi-att-flow/master/squad/evaluate-v1.1.py')
+
 
 def download_releases_assets():
     token = os.environ['token']
@@ -55,6 +58,7 @@ def download_releases_assets():
         with open(os.path.join(directory, release.tag_name, asset.name), 'wb') as handle:
             for block in response.iter_content(1024):
                 handle.write(block)
+
 
 if __name__ == '__main__':
     download_squad_assets()
