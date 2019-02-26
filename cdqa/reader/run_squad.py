@@ -1082,3 +1082,134 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+from sklearn.base import BaseEstimator, TransformerMixin
+
+class BertProcessor(BaseEstimator, TransformerMixin):
+
+    def __init__(self,
+                 is_training=False,
+                 version_2_with_negative=False,
+                 max_seq_length=384,
+                 doc_stride=128,
+                 max_query_length=64):
+
+        self.is_training = is_training
+        self.version_2_with_negative = version_2_with_negative
+        self.max_seq_length = max_seq_length
+        self.doc_stride = doc_stride
+        self.max_query_length = max_query_length
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        examples = read_squad_examples(
+            input_file=X, is_training=self.is_training, version_2_with_negative=self.version_2_with_negative)
+        features = convert_examples_to_features(
+            examples=examples,
+            tokenizer=tokenizer,
+            max_seq_length=self.max_seq_length,
+            doc_stride=self.doc_stride,
+            max_query_length=self.max_query_length,
+            is_training=self.is_training)
+        return examples, features
+
+class BertQA(BaseEstimator):
+
+    def __init__(self,
+                bert_model='',
+                max_seq_length=384,
+                doc_stride=128,
+                max_query_length=64,
+                train_batch_size=32,
+                predict_batch_size=8,
+                learning_rate=5e-5,
+                num_train_epochs=3.0,
+                warmup_proportion=0.1,
+                n_best_size=20,
+                max_answer_length=30,
+                verbose_logging=False,
+                no_cuda=False,
+                seed=42,
+                gradient_accumulation_steps=1,
+                do_lower_case=True,
+                local_rank=-1,
+                fp16=True,
+                loss_scale=0,
+                version_2_with_negative=False,
+                null_score_diff_threshold=0.0):
+
+        self.bert_model = bert_model
+        self.max_seq_length = max_seq_length
+        self.doc_stride = doc_stride
+        self.max_query_length = max_query_length
+        self.train_batch_size = train_batch_size
+        self.predict_batch_size = predict_batch_size
+        self.learning_rate = learning_rate
+        self.num_train_epochs = num_train_epochs
+        self.warmup_proportion = warmup_proportion
+        self.n_best_size = n_best_size
+        self.max_answer_length = max_answer_length
+        self.verbose_logging = verbose_logging
+        self.no_cuda = no_cuda
+        self.seed = seed
+        self.gradient_accumulation_steps = gradient_accumulation_steps
+        self.do_lower_case = do_lower_case
+        self.local_rank = local_rank
+        self.fp16 = fp16
+        self.loss_scale = loss_scale
+        self.version_2_with_negative = version_2_with_negative
+        self.null_score_diff_threshold = null_score_diff_threshold
+
+    def fit(self, X_y):
+        self.model = ''
+        return self
+
+    def predict(self, X):
+
+        logger.info("***** Running predictions *****")
+        logger.info("  Num orig examples = %d", len(eval_examples))
+        logger.info("  Num split examples = %d", len(eval_features))
+        logger.info("  Batch size = %d", args.predict_batch_size)
+
+        all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
+        all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
+        all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
+        all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
+        eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
+        # Run prediction for full data
+        eval_sampler = SequentialSampler(eval_data)
+        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size)
+
+        model.eval()
+        all_results = []
+        logger.info("Start evaluating")
+        for input_ids, input_mask, segment_ids, example_indices in tqdm(eval_dataloader, desc="Evaluating"):
+            if len(all_results) % 1000 == 0:
+                logger.info("Processing example: %d" % (len(all_results)))
+            input_ids = input_ids.to(device)
+            input_mask = input_mask.to(device)
+            segment_ids = segment_ids.to(device)
+            with torch.no_grad():
+                batch_start_logits, batch_end_logits = model(input_ids, segment_ids, input_mask)
+            for i, example_index in enumerate(example_indices):
+                start_logits = batch_start_logits[i].detach().cpu().tolist()
+                end_logits = batch_end_logits[i].detach().cpu().tolist()
+                eval_feature = eval_features[example_index.item()]
+                unique_id = int(eval_feature.unique_id)
+                all_results.append(RawResult(unique_id=unique_id,
+                                             start_logits=start_logits,
+                                             end_logits=end_logits))
+        output_prediction_file = os.path.join(args.output_dir, "predictions.json")
+        output_nbest_file = os.path.join(args.output_dir, "nbest_predictions.json")
+        output_null_log_odds_file = os.path.join(args.output_dir, "null_odds.json")
+        write_predictions(eval_examples, eval_features, all_results,
+                          args.n_best_size, args.max_answer_length,
+                          args.do_lower_case, output_prediction_file,
+                          output_nbest_file, output_null_log_odds_file, args.verbose_logging,
+                          args.version_2_with_negative, args.null_score_diff_threshold)
+
+        # read_json and return
+
+        # return output_prediction_file_json, output_nbest_file_json, output_null_log_odds_file_json
