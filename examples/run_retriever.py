@@ -5,7 +5,7 @@ from ast import literal_eval
 from tqdm import tqdm
 
 # https://stackoverflow.com/questions/32742976/how-to-read-a-column-of-csv-as-dtype-list-using-pandas
-df = pd.read_csv('data/bnpp_newsroom_v1.0/bnpp_newsroom_v1.0.csv', converters={'paragraphs': literal_eval})
+df = pd.read_csv('data/bnpp_newsroom_v1.0/bnpp_newsroom-v1.0.csv', converters={'paragraphs': literal_eval})
 
 df['paragraphs'] = df['paragraphs'].apply(filter_paragraphs)
 
