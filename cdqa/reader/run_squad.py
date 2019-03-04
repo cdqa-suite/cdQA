@@ -1088,25 +1088,31 @@ from sklearn.base import BaseEstimator, TransformerMixin
 class BertProcessor(BaseEstimator, TransformerMixin):
 
     def __init__(self,
+                 bert_model,
+                 do_lower_case=True,
                  is_training=False,
                  version_2_with_negative=False,
                  max_seq_length=384,
                  doc_stride=128,
                  max_query_length=64):
 
+        self.bert_model = bert_model
+        self.do_lower_case = do_lower_case
         self.is_training = is_training
         self.version_2_with_negative = version_2_with_negative
         self.max_seq_length = max_seq_length
         self.doc_stride = doc_stride
         self.max_query_length = max_query_length
 
-    def fit(self, X, y=None):
+    def fit(self, X_y):
         return self
 
     def transform(self, X_y):
         
+        tokenizer = BertTokenizer.from_pretrained(self.bert_model, do_lower_case=self.do_lower_case)
+
         examples = read_squad_examples(
-            input_file=X, is_training=self.is_training, version_2_with_negative=self.version_2_with_negative)
+            input_file=X_y, is_training=self.is_training, version_2_with_negative=self.version_2_with_negative)
         
         features = convert_examples_to_features(
             examples=examples,
@@ -1121,7 +1127,7 @@ class BertProcessor(BaseEstimator, TransformerMixin):
 class BertQA(BaseEstimator):
 
     def __init__(self,
-                bert_model='',
+                bert_model,
                 max_seq_length=384,
                 doc_stride=128,
                 max_query_length=64,
@@ -1141,7 +1147,8 @@ class BertQA(BaseEstimator):
                 fp16=True,
                 loss_scale=0,
                 version_2_with_negative=False,
-                null_score_diff_threshold=0.0):
+                null_score_diff_threshold=0.0,
+                output_dir= '.')
 
         self.bert_model = bert_model
         self.max_seq_length = max_seq_length
@@ -1164,9 +1171,155 @@ class BertQA(BaseEstimator):
         self.loss_scale = loss_scale
         self.version_2_with_negative = version_2_with_negative
         self.null_score_diff_threshold = null_score_diff_threshold
+        self.output_dir = output_dir
 
     def fit(self, X_y):
-        self.model = ''
+
+        torch.cuda.set_device(self.local_rank)
+        device = torch.device("cuda", self.local_rank)
+        n_gpu = 1
+        # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
+        torch.distributed.init_process_group(backend='nccl')
+        logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
+        device, n_gpu, bool(self.local_rank != -1), self.fp16))
+
+        if self.gradient_accumulation_steps < 1:
+            raise ValueError("Invalid gradient_accumulation_steps parameter: {}, should be >= 1".format(
+                                self.gradient_accumulation_steps))
+
+        self.train_batch_size = self.train_batch_size // self.gradient_accumulation_steps
+
+        random.seed(self.seed)
+        np.random.seed(self.seed)
+        torch.manual_seed(self.seed)
+        if n_gpu > 0:
+            torch.cuda.manual_seed_all(self.seed)
+
+        if os.path.exists(self.output_dir) and os.listdir(self.output_dir) and self.do_train:
+            raise ValueError("Output directory () already exists and is not empty.")
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+
+        num_train_optimization_steps = int(
+            len(train_examples) / self.train_batch_size / self.gradient_accumulation_steps) * self.num_train_epochs
+        if self.local_rank != -1:
+            num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
+
+        # Prepare model
+        model = BertForQuestionAnswering.from_pretrained(self.bert_model,
+                    cache_dir=os.path.join(PYTORCH_PRETRAINED_BERT_CACHE, 'distributed_{}'.format(self.local_rank)))
+
+        if self.fp16:
+            model.half()
+        model.to(device)
+        if self.local_rank != -1:
+            try:
+                from apex.parallel import DistributedDataParallel as DDP
+            except ImportError:
+                raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
+
+            model = DDP(model)
+        elif n_gpu > 1:
+            model = torch.nn.DataParallel(model)
+
+        # Prepare optimizer
+        param_optimizer = list(model.named_parameters())
+
+        # hack to remove pooler, which is not used
+        # thus it produce None grad that break apex
+        param_optimizer = [n for n in param_optimizer if 'pooler' not in n[0]]
+
+        no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+        optimizer_grouped_parameters = [
+            {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
+            {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+            ]
+
+        if self.fp16:
+            try:
+                from apex.optimizers import FP16_Optimizer
+                from apex.optimizers import FusedAdam
+            except ImportError:
+                raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
+
+            optimizer = FusedAdam(optimizer_grouped_parameters,
+                                lr=self.learning_rate,
+                                bias_correction=False,
+                                max_grad_norm=1.0)
+            if self.loss_scale == 0:
+                optimizer = FP16_Optimizer(optimizer, dynamic_loss_scale=True)
+            else:
+                optimizer = FP16_Optimizer(optimizer, static_loss_scale=self.loss_scale)
+        else:
+            optimizer = BertAdam(optimizer_grouped_parameters,
+                                lr=self.learning_rate,
+                                warmup=self.warmup_proportion,
+                                t_total=num_train_optimization_steps)
+
+        global_step = 0
+
+        logger.info("***** Running training *****")
+        logger.info("  Batch size = %d", self.train_batch_size)
+        logger.info("  Num steps = %d", num_train_optimization_steps)
+        all_input_ids = torch.tensor([f.input_ids for f in X_y], dtype=torch.long)
+        all_input_mask = torch.tensor([f.input_mask for f in X_y], dtype=torch.long)
+        all_segment_ids = torch.tensor([f.segment_ids for f in X_y], dtype=torch.long)
+        all_start_positions = torch.tensor([f.start_position for f in X_y], dtype=torch.long)
+        all_end_positions = torch.tensor([f.end_position for f in X_y], dtype=torch.long)
+        train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
+                                    all_start_positions, all_end_positions)
+        if self.local_rank == -1:
+            train_sampler = RandomSampler(train_data)
+        else:
+            train_sampler = DistributedSampler(train_data)
+        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=self.train_batch_size)
+
+        model.train()
+        for _ in trange(int(self.num_train_epochs), desc="Epoch"):
+            for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
+                if n_gpu == 1:
+                    batch = tuple(t.to(device) for t in batch) # multi-gpu does scattering it-self
+                input_ids, input_mask, segment_ids, start_positions, end_positions = batch
+                loss = model(input_ids, segment_ids, input_mask, start_positions, end_positions)
+                if n_gpu > 1:
+                    loss = loss.mean() # mean() to average on multi-gpu.
+                if self.gradient_accumulation_steps > 1:
+                    loss = loss / self.gradient_accumulation_steps
+
+                if self.fp16:
+                    optimizer.backward(loss)
+                else:
+                    loss.backward()
+                if (step + 1) % self.gradient_accumulation_steps == 0:
+                    if self.fp16:
+                        # modify learning rate with special warm up BERT uses
+                        # if self.fp16 is False, BertAdam is used and handles this automatically
+                        lr_this_step = self.learning_rate * warmup_linear(global_step/num_train_optimization_steps, self.warmup_proportion)
+                        for param_group in optimizer.param_groups:
+                            param_group['lr'] = lr_this_step
+                    optimizer.step()
+                    optimizer.zero_grad()
+                    global_step += 1
+
+        # Save a trained model and the associated configuration
+        model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
+        output_model_file = os.path.join(self.output_dir, WEIGHTS_NAME)
+        torch.save(model_to_save.state_dict(), output_model_file)
+        output_config_file = os.path.join(self.output_dir, CONFIG_NAME)
+        with open(output_config_file, 'w') as f:
+            f.write(model_to_save.config.to_json_string())
+
+        if custom_weights:
+            model = BertForQuestionAnswering.from_pretrained(self.bert_model)
+        else:
+            # Load a trained model and config that you have fine-tuned
+            config = BertConfig(output_config_file)
+            model = BertForQuestionAnswering(config)
+            model.load_state_dict(torch.load(output_model_file))
+
+        model.to(device)
+        self.model = model
+
         return self
 
     def predict(self, X):
