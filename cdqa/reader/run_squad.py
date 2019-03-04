@@ -1129,9 +1129,6 @@ class BertQA(BaseEstimator):
     def __init__(self,
                  bert_model,
                  custom_weights=True,
-                 max_seq_length=384,
-                 doc_stride=128,
-                 max_query_length=64,
                  train_batch_size=32,
                  predict_batch_size=8,
                  learning_rate=5e-5,
@@ -1153,9 +1150,6 @@ class BertQA(BaseEstimator):
 
         self.bert_model = bert_model
         self.custom_weights = custom_weights
-        self.max_seq_length = max_seq_length
-        self.doc_stride = doc_stride
-        self.max_query_length = max_query_length
         self.train_batch_size = train_batch_size
         self.predict_batch_size = predict_batch_size
         self.learning_rate = learning_rate
