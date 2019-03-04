@@ -857,6 +857,8 @@ class BertQA(BaseEstimator):
 
     def fit(self, X_y):
 
+        train_examples, train_features = X_y
+
         if self.local_rank == -1 or self.no_cuda:
             device = torch.device("cuda" if torch.cuda.is_available() and not self.no_cuda else "cpu")
             n_gpu = torch.cuda.device_count()
@@ -946,14 +948,14 @@ class BertQA(BaseEstimator):
 
         logger.info("***** Running training *****")
         logger.info("  Num orig examples = %d", len(train_examples))
-        logger.info("  Num split examples = %d", len(X_y))
+        logger.info("  Num split examples = %d", len(train_features))
         logger.info("  Batch size = %d", self.train_batch_size)
         logger.info("  Num steps = %d", num_train_optimization_steps)
-        all_input_ids = torch.tensor([f.input_ids for f in X_y], dtype=torch.long)
-        all_input_mask = torch.tensor([f.input_mask for f in X_y], dtype=torch.long)
-        all_segment_ids = torch.tensor([f.segment_ids for f in X_y], dtype=torch.long)
-        all_start_positions = torch.tensor([f.start_position for f in X_y], dtype=torch.long)
-        all_end_positions = torch.tensor([f.end_position for f in X_y], dtype=torch.long)
+        all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
+        all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
+        all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
+        all_start_positions = torch.tensor([f.start_position for f in train_features], dtype=torch.long)
+        all_end_positions = torch.tensor([f.end_position for f in train_features], dtype=torch.long)
         train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
                                     all_start_positions, all_end_positions)
         if self.local_rank == -1:
@@ -1012,14 +1014,16 @@ class BertQA(BaseEstimator):
 
     def predict(self, X):
 
+        eval_examples, eval_features = X
+
         logger.info("***** Running predictions *****")
         logger.info("  Num orig examples = %d", len(eval_examples))
-        logger.info("  Num split examples = %d", len(X))
+        logger.info("  Num split examples = %d", len(eval_features))
         logger.info("  Batch size = %d", self.predict_batch_size)
 
-        all_input_ids = torch.tensor([f.input_ids for f in X], dtype=torch.long)
-        all_input_mask = torch.tensor([f.input_mask for f in X], dtype=torch.long)
-        all_segment_ids = torch.tensor([f.segment_ids for f in X], dtype=torch.long)
+        all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
+        all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
+        all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
         all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
         eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
         # Run prediction for full data
@@ -1040,7 +1044,7 @@ class BertQA(BaseEstimator):
             for i, example_index in enumerate(example_indices):
                 start_logits = batch_start_logits[i].detach().cpu().tolist()
                 end_logits = batch_end_logits[i].detach().cpu().tolist()
-                eval_feature = X[example_index.item()]
+                eval_feature = eval_features[example_index.item()]
                 unique_id = int(eval_feature.unique_id)
                 all_results.append(RawResult(unique_id=unique_id,
                                              start_logits=start_logits,
@@ -1050,7 +1054,7 @@ class BertQA(BaseEstimator):
         output_null_log_odds_file = os.path.join(self.output_dir, "null_odds.json")
         all_predictions, all_nbest_json, scores_diff_json = write_predictions(
             eval_examples,
-            X,
+            eval_features,
             all_results,
             self.n_best_size,
             self.max_answer_length,
