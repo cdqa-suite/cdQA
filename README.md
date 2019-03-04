@@ -13,7 +13,7 @@ An end-to-end closed-domain question answering system with BERT and classic IR m
 
 ## Installation
 
-Note: Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI with a single Tesla V100 16GB.
+Note: Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI with a single Tesla V100 16GB + 16-bits training.
 
 ```shell
 git clone https://github.com/fmikaelian/cdQA.git

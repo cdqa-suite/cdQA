@@ -1177,17 +1177,17 @@ class BertQA(BaseEstimator):
 
     def fit(self, X_y):
 
-        if args.local_rank == -1 or args.no_cuda:
-            device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
+        if self.local_rank == -1 or self.no_cuda:
+            device = torch.device("cuda" if torch.cuda.is_available() and not self.no_cuda else "cpu")
             n_gpu = torch.cuda.device_count()
         else:
-            torch.cuda.set_device(args.local_rank)
-            device = torch.device("cuda", args.local_rank)
+            torch.cuda.set_device(self.local_rank)
+            device = torch.device("cuda", self.local_rank)
             n_gpu = 1
             # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
             torch.distributed.init_process_group(backend='nccl')
         logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
-            device, n_gpu, bool(args.local_rank != -1), args.fp16))
+            device, n_gpu, bool(self.local_rank != -1), self.fp16))
 
         if self.gradient_accumulation_steps < 1:
             raise ValueError("Invalid gradient_accumulation_steps parameter: {}, should be >= 1".format(
