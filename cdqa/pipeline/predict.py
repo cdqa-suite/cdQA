@@ -1,4 +1,4 @@
-from reader.run_squad import BertProcessor, BertQA
+from reader.bertqa_sklearn import BertProcessor, BertQA
 from joblib import load
 
 test_processor = BertProcessor(is_training=False)
