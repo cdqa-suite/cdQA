@@ -1,6 +1,7 @@
 import json
 import os
 from tqdm import tqdm
+import uuid
 
 def df2squad(df, filename, squad_version='v2.0', output_dir=None):
    """
@@ -34,6 +35,26 @@ def df2squad(df, filename, squad_version='v2.0', output_dir=None):
            json.dump(json_data, outfile)
 
    return json_data
+
+def generate_squad_examples(question, article_indices, metadata):
+    
+    squad_examples = []
+    
+    metadata_sliced = metadata.loc[article_indices]
+    
+    for index, row in tqdm(metadata_sliced.iterrows()):
+        temp = {'title': row['title'],
+               'paragraphs': []}
+        
+        for paragraph in row['paragraphs']:
+            temp['paragraphs'].append({'context': paragraph,
+                                      'qas': [],
+                                      'question': question,
+                                      'id': str(uuid.uuid1())})
+            
+            squad_examples.append(temp)
+
+    return squad_examples
 
 def filter_paragraphs(paragraphs):
     # filter out paragraphs shorter than 10 words and longer than 250 words

@@ -30,7 +30,7 @@ from io import open
 import numpy as np
 import torch
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
-                              TensorDataset)
+                                TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
@@ -38,8 +38,8 @@ from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig, WEIGHTS_NAME, CONFIG_NAME
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
-                                                  BertTokenizer,
-                                                  whitespace_tokenize)
+                                                    BertTokenizer,
+                                                    whitespace_tokenize)
 
 if sys.version_info[0] == 2:
     import cPickle as pickle
@@ -59,13 +59,13 @@ class SquadExample(object):
     """
 
     def __init__(self,
-                 qas_id,
-                 question_text,
-                 doc_tokens,
-                 orig_answer_text=None,
-                 start_position=None,
-                 end_position=None,
-                 is_impossible=None):
+                    qas_id,
+                    question_text,
+                    doc_tokens,
+                    orig_answer_text=None,
+                    start_position=None,
+                    end_position=None,
+                    is_impossible=None):
         self.qas_id = qas_id
         self.question_text = question_text
         self.doc_tokens = doc_tokens
@@ -96,18 +96,18 @@ class InputFeatures(object):
     """A single set of features of data."""
 
     def __init__(self,
-                 unique_id,
-                 example_index,
-                 doc_span_index,
-                 tokens,
-                 token_to_orig_map,
-                 token_is_max_context,
-                 input_ids,
-                 input_mask,
-                 segment_ids,
-                 start_position=None,
-                 end_position=None,
-                 is_impossible=None):
+                    unique_id,
+                    example_index,
+                    doc_span_index,
+                    tokens,
+                    token_to_orig_map,
+                    token_is_max_context,
+                    input_ids,
+                    input_mask,
+                    segment_ids,
+                    start_position=None,
+                    end_position=None,
+                    is_impossible=None):
         self.unique_id = unique_id
         self.example_index = example_index
         self.doc_span_index = doc_span_index
@@ -124,8 +124,12 @@ class InputFeatures(object):
 
 def read_squad_examples(input_file, is_training, version_2_with_negative):
     """Read a SQuAD json file into a list of SquadExample."""
-    with open(input_file, "r", encoding='utf-8') as reader:
-        input_data = json.load(reader)["data"]
+
+    if isinstance(input_file, str):
+        with open(input_file, "r", encoding='utf-8') as reader:
+            input_data = json.load(reader)["data"]
+    else:
+        input_data = input_file
 
     def is_whitespace(c):
         if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
@@ -181,7 +185,7 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                             whitespace_tokenize(orig_answer_text))
                         if actual_text.find(cleaned_answer_text) == -1:
                             logger.warning("Could not find answer: '%s' vs. '%s'",
-                                           actual_text, cleaned_answer_text)
+                                            actual_text, cleaned_answer_text)
                             continue
                     else:
                         start_position = -1
@@ -201,7 +205,7 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
 
 
 def convert_examples_to_features(examples, tokenizer, max_seq_length,
-                                 doc_stride, max_query_length, is_training):
+                                    doc_stride, max_query_length, is_training):
     """Loads a data file into a list of `InputBatch`s."""
 
     unique_id = 1000000000
@@ -275,7 +279,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
                 token_to_orig_map[len(tokens)] = tok_to_orig_index[split_token_index]
 
                 is_max_context = _check_is_max_context(doc_spans, doc_span_index,
-                                                       split_token_index)
+                                                        split_token_index)
                 token_is_max_context[len(tokens)] = is_max_context
                 tokens.append(all_doc_tokens[split_token_index])
                 segment_ids.append(1)
@@ -364,7 +368,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
 
 
 def _improve_answer_span(doc_tokens, input_start, input_end, tokenizer,
-                         orig_answer_text):
+                            orig_answer_text):
     """Returns tokenized answer spans that better match the annotated answer."""
 
     # The SQuAD annotations are character based. We first project them to
@@ -438,13 +442,13 @@ def _check_is_max_context(doc_spans, cur_span_index, position):
 
 
 RawResult = collections.namedtuple("RawResult",
-                                   ["unique_id", "start_logits", "end_logits"])
+                                    ["unique_id", "start_logits", "end_logits"])
 
 
 def write_predictions(all_examples, all_features, all_results, n_best_size,
-                      max_answer_length, do_lower_case, output_prediction_file,
-                      output_nbest_file, output_null_log_odds_file, verbose_logging,
-                      version_2_with_negative, null_score_diff_threshold):
+                        max_answer_length, do_lower_case, output_prediction_file,
+                        output_nbest_file, output_null_log_odds_file, verbose_logging,
+                        version_2_with_negative, null_score_diff_threshold):
     """Write final predictions to the json file and log-odds of null if needed."""
     logger.info("Writing predictions to: %s" % (output_prediction_file))
     logger.info("Writing nbest to: %s" % (output_nbest_file))
@@ -632,6 +636,8 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
         with open(output_null_log_odds_file, "w") as writer:
             writer.write(json.dumps(scores_diff_json, indent=4) + "\n")
 
+    return all_predictions, all_nbest_json, scores_diff_json
+
 
 def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
     """Project the tokenized prediction back to the original text."""
@@ -768,13 +774,13 @@ from sklearn.base import BaseEstimator, TransformerMixin
 class BertProcessor(BaseEstimator, TransformerMixin):
 
     def __init__(self,
-                 bert_model,
-                 do_lower_case=True,
-                 is_training=False,
-                 version_2_with_negative=False,
-                 max_seq_length=384,
-                 doc_stride=128,
-                 max_query_length=64):
+                    bert_model,
+                    do_lower_case=True,
+                    is_training=False,
+                    version_2_with_negative=False,
+                    max_seq_length=384,
+                    doc_stride=128,
+                    max_query_length=64):
 
         self.bert_model = bert_model
         self.do_lower_case = do_lower_case
@@ -807,26 +813,26 @@ class BertProcessor(BaseEstimator, TransformerMixin):
 class BertQA(BaseEstimator):
 
     def __init__(self,
-                 bert_model,
-                 custom_weights=True,
-                 train_batch_size=32,
-                 predict_batch_size=8,
-                 learning_rate=5e-5,
-                 num_train_epochs=3.0,
-                 warmup_proportion=0.1,
-                 n_best_size=20,
-                 max_answer_length=30,
-                 verbose_logging=False,
-                 no_cuda=False,
-                 seed=42,
-                 gradient_accumulation_steps=1,
-                 do_lower_case=True,
-                 local_rank=-1,
-                 fp16=True,
-                 loss_scale=0,
-                 version_2_with_negative=False,
-                 null_score_diff_threshold=0.0,
-                 output_dir='.'):
+                    bert_model,
+                    custom_weights=True,
+                    train_batch_size=32,
+                    predict_batch_size=8,
+                    learning_rate=5e-5,
+                    num_train_epochs=3.0,
+                    warmup_proportion=0.1,
+                    n_best_size=20,
+                    max_answer_length=30,
+                    verbose_logging=False,
+                    no_cuda=False,
+                    seed=42,
+                    gradient_accumulation_steps=1,
+                    do_lower_case=True,
+                    local_rank=-1,
+                    fp16=True,
+                    loss_scale=0,
+                    version_2_with_negative=False,
+                    null_score_diff_threshold=0.0,
+                    output_dir='.'):
 
         self.bert_model = bert_model
         self.custom_weights = custom_weights
@@ -939,6 +945,8 @@ class BertQA(BaseEstimator):
         global_step = 0
 
         logger.info("***** Running training *****")
+        logger.info("  Num orig examples = %d", len(train_examples))
+        logger.info("  Num split examples = %d", len(X_y))
         logger.info("  Batch size = %d", self.train_batch_size)
         logger.info("  Num steps = %d", num_train_optimization_steps)
         all_input_ids = torch.tensor([f.input_ids for f in X_y], dtype=torch.long)
@@ -1005,6 +1013,8 @@ class BertQA(BaseEstimator):
     def predict(self, X):
 
         logger.info("***** Running predictions *****")
+        logger.info("  Num orig examples = %d", len(eval_examples))
+        logger.info("  Num split examples = %d", len(X))
         logger.info("  Batch size = %d", self.predict_batch_size)
 
         all_input_ids = torch.tensor([f.input_ids for f in X], dtype=torch.long)
@@ -1033,15 +1043,23 @@ class BertQA(BaseEstimator):
                 eval_feature = X[example_index.item()]
                 unique_id = int(eval_feature.unique_id)
                 all_results.append(RawResult(unique_id=unique_id,
-                                             start_logits=start_logits,
-                                             end_logits=end_logits))
+                                                start_logits=start_logits,
+                                                end_logits=end_logits))
         output_prediction_file = os.path.join(self.output_dir, "predictions.json")
         output_nbest_file = os.path.join(self.output_dir, "nbest_predictions.json")
         output_null_log_odds_file = os.path.join(self.output_dir, "null_odds.json")
-        write_predictions(eval_examples, eval_features, all_results,
-                          self.n_best_size, self.max_answer_length,
-                          self.do_lower_case, output_prediction_file,
-                          output_nbest_file, output_null_log_odds_file, self.verbose_logging,
-                          self.version_2_with_negative, self.null_score_diff_threshold)
+        all_predictions, all_nbest_json, scores_diff_json = write_predictions(
+            eval_examples,
+            eval_features,
+            all_results,
+            self.n_best_size,
+            self.max_answer_length,
+            self.do_lower_case,
+            output_prediction_file,
+            output_nbest_file,
+            output_null_log_odds_file,
+            self.verbose_logging,
+            self.version_2_with_negative,
+            self.null_score_diff_threshold)
 
-        return all_results
+        return all_predictions, all_nbest_json, scores_diff_json
