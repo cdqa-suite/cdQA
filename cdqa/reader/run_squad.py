@@ -1127,30 +1127,32 @@ class BertProcessor(BaseEstimator, TransformerMixin):
 class BertQA(BaseEstimator):
 
     def __init__(self,
-                bert_model,
-                max_seq_length=384,
-                doc_stride=128,
-                max_query_length=64,
-                train_batch_size=32,
-                predict_batch_size=8,
-                learning_rate=5e-5,
-                num_train_epochs=3.0,
-                warmup_proportion=0.1,
-                n_best_size=20,
-                max_answer_length=30,
-                verbose_logging=False,
-                no_cuda=False,
-                seed=42,
-                gradient_accumulation_steps=1,
-                do_lower_case=True,
-                local_rank=-1,
-                fp16=True,
-                loss_scale=0,
-                version_2_with_negative=False,
-                null_score_diff_threshold=0.0,
-                output_dir= '.')
+                 bert_model,
+                 custom_weights=True,
+                 max_seq_length=384,
+                 doc_stride=128,
+                 max_query_length=64,
+                 train_batch_size=32,
+                 predict_batch_size=8,
+                 learning_rate=5e-5,
+                 num_train_epochs=3.0,
+                 warmup_proportion=0.1,
+                 n_best_size=20,
+                 max_answer_length=30,
+                 verbose_logging=False,
+                 no_cuda=False,
+                 seed=42,
+                 gradient_accumulation_steps=1,
+                 do_lower_case=True,
+                 local_rank=-1,
+                 fp16=True,
+                 loss_scale=0,
+                 version_2_with_negative=False,
+                 null_score_diff_threshold=0.0,
+                 output_dir='.'):
 
         self.bert_model = bert_model
+        self.custom_weights = custom_weights
         self.max_seq_length = max_seq_length
         self.doc_stride = doc_stride
         self.max_query_length = max_query_length
@@ -1175,13 +1177,17 @@ class BertQA(BaseEstimator):
 
     def fit(self, X_y):
 
-        torch.cuda.set_device(self.local_rank)
-        device = torch.device("cuda", self.local_rank)
-        n_gpu = 1
-        # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
-        torch.distributed.init_process_group(backend='nccl')
+        if args.local_rank == -1 or args.no_cuda:
+            device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
+            n_gpu = torch.cuda.device_count()
+        else:
+            torch.cuda.set_device(args.local_rank)
+            device = torch.device("cuda", args.local_rank)
+            n_gpu = 1
+            # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
+            torch.distributed.init_process_group(backend='nccl')
         logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
-        device, n_gpu, bool(self.local_rank != -1), self.fp16))
+            device, n_gpu, bool(args.local_rank != -1), args.fp16))
 
         if self.gradient_accumulation_steps < 1:
             raise ValueError("Invalid gradient_accumulation_steps parameter: {}, should be >= 1".format(
@@ -1309,7 +1315,7 @@ class BertQA(BaseEstimator):
         with open(output_config_file, 'w') as f:
             f.write(model_to_save.config.to_json_string())
 
-        if custom_weights:
+        if self.custom_weights:
             model = BertForQuestionAnswering.from_pretrained(self.bert_model)
         else:
             # Load a trained model and config that you have fine-tuned
