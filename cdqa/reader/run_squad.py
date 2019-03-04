@@ -1103,9 +1103,11 @@ class BertProcessor(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
 
-    def transform(self, X):
+    def transform(self, X_y):
+        
         examples = read_squad_examples(
             input_file=X, is_training=self.is_training, version_2_with_negative=self.version_2_with_negative)
+        
         features = convert_examples_to_features(
             examples=examples,
             tokenizer=tokenizer,
@@ -1113,6 +1115,7 @@ class BertProcessor(BaseEstimator, TransformerMixin):
             doc_stride=self.doc_stride,
             max_query_length=self.max_query_length,
             is_training=self.is_training)
+        
         return examples, features
 
 class BertQA(BaseEstimator):
@@ -1169,18 +1172,16 @@ class BertQA(BaseEstimator):
     def predict(self, X):
 
         logger.info("***** Running predictions *****")
-        logger.info("  Num orig examples = %d", len(eval_examples))
-        logger.info("  Num split examples = %d", len(eval_features))
-        logger.info("  Batch size = %d", args.predict_batch_size)
+        logger.info("  Batch size = %d", self.predict_batch_size)
 
-        all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
-        all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
-        all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
+        all_input_ids = torch.tensor([f.input_ids for f in X], dtype=torch.long)
+        all_input_mask = torch.tensor([f.input_mask for f in X], dtype=torch.long)
+        all_segment_ids = torch.tensor([f.segment_ids for f in X], dtype=torch.long)
         all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
         eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
-        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size)
+        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=self.predict_batch_size)
 
         model.eval()
         all_results = []
@@ -1196,20 +1197,18 @@ class BertQA(BaseEstimator):
             for i, example_index in enumerate(example_indices):
                 start_logits = batch_start_logits[i].detach().cpu().tolist()
                 end_logits = batch_end_logits[i].detach().cpu().tolist()
-                eval_feature = eval_features[example_index.item()]
+                eval_feature = X[example_index.item()]
                 unique_id = int(eval_feature.unique_id)
                 all_results.append(RawResult(unique_id=unique_id,
                                              start_logits=start_logits,
                                              end_logits=end_logits))
-        output_prediction_file = os.path.join(args.output_dir, "predictions.json")
-        output_nbest_file = os.path.join(args.output_dir, "nbest_predictions.json")
-        output_null_log_odds_file = os.path.join(args.output_dir, "null_odds.json")
-        write_predictions(eval_examples, eval_features, all_results,
-                          args.n_best_size, args.max_answer_length,
-                          args.do_lower_case, output_prediction_file,
-                          output_nbest_file, output_null_log_odds_file, args.verbose_logging,
-                          args.version_2_with_negative, args.null_score_diff_threshold)
+        # output_prediction_file = os.path.join(self.output_dir, "predictions.json")
+        # output_nbest_file = os.path.join(self.output_dir, "nbest_predictions.json")
+        # output_null_log_odds_file = os.path.join(self.output_dir, "null_odds.json")
+        # write_predictions(eval_examples, eval_features, all_results,
+        #                   self.n_best_size, self.max_answer_length,
+        #                   self.do_lower_case, output_prediction_file,
+        #                   output_nbest_file, output_null_log_odds_file, self.verbose_logging,
+        #                   self.version_2_with_negative, self.null_score_diff_threshold)
 
-        # read_json and return
-
-        # return output_prediction_file_json, output_nbest_file_json, output_null_log_odds_file_json
+        return all_results
