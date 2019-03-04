@@ -25,7 +25,7 @@ squad_examples = generate_squad_examples(question=question,
                                          article_indices=article_indices,
                                          metadata=df)
 
-test_processor = BertProcessor(is_training=False)
+test_processor = BertProcessor(bert_model='bert-base-uncased', is_training=False)
 test_examples, test_features = test_processor.fit_transform(X=squad_examples)
 model = load('model.joblib') 
 predictions = model.predict(X=test_features)
