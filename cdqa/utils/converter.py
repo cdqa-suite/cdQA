@@ -48,10 +48,11 @@ def generate_squad_examples(question, article_indices, metadata):
         
         for paragraph in row['paragraphs']:
             temp['paragraphs'].append({'context': paragraph,
-                                      'qas': [],
-                                      'question': question,
-                                      'id': str(uuid.uuid1())})
-            
+                                       'qas': [{'answers': [],
+                                                'question': question,
+                                                'id': str(uuid.uuid1())}]
+                                      })
+
             squad_examples.append(temp)
 
     return squad_examples
