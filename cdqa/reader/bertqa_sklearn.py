@@ -790,15 +790,15 @@ class BertProcessor(BaseEstimator, TransformerMixin):
         self.doc_stride = doc_stride
         self.max_query_length = max_query_length
 
-    def fit(self, X_y):
+    def fit(self, X, y=None):
         return self
 
-    def transform(self, X_y):
+    def transform(self, X):
         
         tokenizer = BertTokenizer.from_pretrained(self.bert_model, do_lower_case=self.do_lower_case)
 
         examples = read_squad_examples(
-            input_file=X_y, is_training=self.is_training, version_2_with_negative=self.version_2_with_negative)
+            input_file=X, is_training=self.is_training, version_2_with_negative=self.version_2_with_negative)
         
         features = convert_examples_to_features(
             examples=examples,
@@ -855,9 +855,9 @@ class BertQA(BaseEstimator):
         self.null_score_diff_threshold = null_score_diff_threshold
         self.output_dir = output_dir
 
-    def fit(self, X_y):
+    def fit(self, X, y=None):
 
-        train_examples, train_features = X_y
+        train_examples, train_features = X
 
         if self.local_rank == -1 or self.no_cuda:
             device = torch.device("cuda" if torch.cuda.is_available() and not self.no_cuda else "cpu")
