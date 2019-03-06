@@ -32,7 +32,7 @@ import torch
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
-from tqdm import tqdm, trange
+from tqdm.auto import tqdm, trange
 
 from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig, WEIGHTS_NAME, CONFIG_NAME
@@ -883,7 +883,7 @@ class BertQA(BaseEstimator):
         if n_gpu > 0:
             torch.cuda.manual_seed_all(self.seed)
 
-        if os.path.exists(self.output_dir) and os.listdir(self.output_dir) and self.do_train:
+        if os.path.exists(self.output_dir) and os.listdir(self.output_dir):
             raise ValueError("Output directory () already exists and is not empty.")
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)

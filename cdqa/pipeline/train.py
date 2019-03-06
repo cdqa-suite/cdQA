@@ -16,7 +16,15 @@ dump(article_tfidf_matrix, 'models/article_tfidf_matrix.joblib')
 
 # train document reader
 train_processor = BertProcessor(bert_model='bert-base-uncased', is_training=True)
-train_examples, train_features = train_processor.fit_transform(X='data/bnpp_newsroom_v1.0/bnpp_newsroom-v1.0.csv')
-model = BertQA(bert_model='models/bert_qa_squad_v1.1')
-model.fit(X_y=train_features)
+train_examples, train_features = train_processor.fit_transform(X='data/train-v1.1.json')
+
+model = BertQA(bert_model='bert-base-uncased',
+               custom_weights=False,
+               train_batch_size=12,
+               learning_rate=3e-5,
+               num_train_epochs=2,
+               output_dir='logs/bert_qa_squad_v1.1_sklearn')
+
+model.fit(X=(train_examples, train_features))
+
 dump(model, 'model.joblib')
