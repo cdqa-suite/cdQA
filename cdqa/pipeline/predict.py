@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from ast import literal_eval
 from joblib import load
@@ -25,9 +26,9 @@ squad_examples = generate_squad_examples(question=question,
                                          article_indices=article_indices,
                                          metadata=df)
 
-test_processor = BertProcessor(bert_model='bert-base-uncased', is_training=False)
+test_processor = BertProcessor(bert_model='bert-base-uncased', do_lower_case=True, is_training=False)
 test_examples, test_features = test_processor.fit_transform(X=squad_examples)
-model = load('model.joblib') 
+model = load(os.path.join('models/bert_qa_squad_v1.1_sklearn', 'bert_qa_squad_v1.1_sklearn.joblib'))
 predictions = model.predict(X=test_features)
 
 print(question)

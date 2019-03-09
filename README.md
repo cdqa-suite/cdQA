@@ -35,6 +35,7 @@ pip install .
 │   │   └── train.py --> trains a model given a input dataset already processed
 │   ├── reader
 │   │   ├── __init__.py
+│   │   ├── bertqa_sklearn.py --> A BertForQuestionAnswering sklearn wrapper based on run_squad.py's main() function
 │   │   └── run_squad.py --> a miror of pytorch-pretrained-BERT example (used for pipeline steps)
 │   ├── retriever
 │   │   ├── __init__.py
@@ -61,11 +62,24 @@ pip install .
 
 ## Getting started
 
-Download existing data and models with the `download.py` script:
+To download existing data and models automatically from the Github releases, you will need a personal Github token. You can find [how to create one here.](https://github.com/settings/tokens). You only need to select the `repo` scope.
 
 ```shell
 export token='YOUR_GITHUB_TOKEN'
+```
+
+You can now execute the `download.py` to get all Github release assets:
+
+```shell
 python cdqa/pipeline/download.py
+```
+
+In order to accelerate training and prediction time, you will need to install [`apex`](https://github.com/nvidia/apex):
+
+```shell
+git clone https://github.com/NVIDIA/apex.git
+cd apex/
+python setup.py install --cuda_ext --cpp_ext
 ```
 
 You can now execute the [`examples`](examples) or the [`pipeline`](cdqa/pipeline) steps to use the application.
