@@ -29,21 +29,27 @@ def download_releases_assets():
     }
 
     # download models
-    release = repo.get_release('bert_qa_squad_v1.1')
-    assets = release.get_assets()
+    models = ['bert_qa_squad_v1.1',
+              'bert_qa_squad_v1.1_dev',
+              'bert_qa_squad_v1.1_sklearn'
+              ]
+    
+    for model in models:
+        release = repo.get_release(model)
+        assets = release.get_assets()
 
-    for asset in assets:
-        print(asset.name, asset.url)
-        if (os.path.splitext(asset.name)[1] == '.bin') or (asset.name == 'bert_config.json'):
-            directory = 'models'
-        else:
-            directory = 'logs'
-        response = requests.get(asset.url, headers=headers)
-        if not os.path.exists(os.path.join(directory, release.tag_name)):
-            os.makedirs(os.path.join(directory, release.tag_name))
-        with open(os.path.join(directory, release.tag_name, asset.name), 'wb') as handle:
-            for block in response.iter_content(1024):
-                handle.write(block)
+        for asset in assets:
+            print(asset.name, asset.url)
+            if (os.path.splitext(asset.name)[1] == '.bin') or (os.path.splitext(asset.name)[1] == '.joblib') or (asset.name == 'bert_config.json'):
+                directory = 'models'
+            else:
+                directory = 'logs'
+            response = requests.get(asset.url, headers=headers)
+            if not os.path.exists(os.path.join(directory, release.tag_name)):
+                os.makedirs(os.path.join(directory, release.tag_name))
+            with open(os.path.join(directory, release.tag_name, asset.name), 'wb') as handle:
+                for block in response.iter_content(1024):
+                    handle.write(block)
 
     # download datasets
     release = repo.get_release('bnpp_newsroom_v1.0')
