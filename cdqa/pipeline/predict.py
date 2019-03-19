@@ -29,7 +29,6 @@ squad_examples = generate_squad_examples(question=question,
 test_processor = BertProcessor(bert_model='bert-base-uncased', do_lower_case=True, is_training=False)
 test_examples, test_features = test_processor.fit_transform(X=squad_examples)
 model = load(os.path.join('models/bert_qa_squad_v1.1_sklearn', 'bert_qa_squad_v1.1_sklearn.joblib'))
-predictions = model.predict(X=test_features)
+final_prediction, all_predictions, all_nbest_json, scores_diff_json = model.predict(X=(test_examples, test_features))
 
-print(question)
-print(predictions)
+print(question, final_prediction)

@@ -6,63 +6,32 @@ https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com
 An end-to-end closed-domain question answering system with BERT and classic IR methods 📚
 
 - [Installation](#installation)
-- [Repository Structure](#repository-structure)
 - [Getting started](#getting-started)
+  - [Preparing your data](#preparing-your-data)
+  - [Training models](#training-models)
+  - [Making predictions](#making-predictions)
+  - [Practical examples](#practical-examples)
 - [Contributing](#contributing)
 - [References](#references)
 
 ## Installation
-
-Note: Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI with a single Tesla V100 16GB + 16-bits training.
 
 ```shell
 git clone https://github.com/fmikaelian/cdQA.git
 pip install .
 ```
 
-## Repository Structure
+Note: Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI + a single Tesla V100 16GB with 16-bits training enabled (to accelerate training and prediction). To enable this feature, you will need to install [`apex`](https://github.com/nvidia/apex):
 
-```
-├── LICENSE
-├── README.md
-├── cdqa
-│   ├── __init__.py
-│   ├── pipeline --> all steps as scripts to use the application
-│   │   ├── __init__.py
-│   │   ├── download.py --> downloads all assets needed to use the application (data, models)
-│   │   ├── predict.py --> performs a prediction given a sample
-│   │   ├── processing.py --> processes raw data to a format usable for model training
-│   │   └── train.py --> trains a model given a input dataset already processed
-│   ├── reader
-│   │   ├── __init__.py
-│   │   ├── bertqa_sklearn.py --> A BertForQuestionAnswering sklearn wrapper based on run_squad.py's main() function
-│   │   └── run_squad.py --> a miror of pytorch-pretrained-BERT example (used for pipeline steps)
-│   ├── retriever
-│   │   ├── __init__.py
-│   │   └── tfidf_doc_ranker.py --> the logic for the document retriever
-│   ├── scrapper
-│   │   ├── __init__.py
-│   │   └── bs4_scrapper.py --> the logic for the dataset scrapper
-│   └── utils --> utility functions used in the pipeline (to avoid flooding pipeline scripts)
-│       ├── __init__.py
-│       └── converter.py --> the logic for converting the dataset to SQuAD format
-├── data --> the raw datasets
-├── examples --> examples to use different parts of the appplication
-│   ├── run_converter.py
-│   └── run_retriever.py
-├── logs --> stores the outpout predictions and metrics
-├── models --> stores the trained models
-├── requirements.txt
-├── samples --> sample data for tests or examples
-├── setup.py
-└── tests --> unit tests for the application
-    ├── __init__.py
-    └── test_pipeline.py
+```shell
+git clone https://github.com/NVIDIA/apex.git
+cd apex/
+python setup.py install --cuda_ext --cpp_ext
 ```
 
 ## Getting started
 
-To download existing data and models automatically from the Github releases, you will need a personal Github token. You can find [how to create one here.](https://github.com/settings/tokens). You only need to select the `repo` scope.
+To download existing data and models automatically from the Github releases, you will need a personal Github token. You can find [how to create one here](https://github.com/settings/tokens) (you only need to select the `repo` scope).
 
 ```shell
 export token='YOUR_GITHUB_TOKEN'
@@ -74,29 +43,38 @@ You can now execute the `download.py` to get all Github release assets:
 python cdqa/pipeline/download.py
 ```
 
-In order to accelerate training and prediction time, you will need to install [`apex`](https://github.com/nvidia/apex):
+### Preparing your data
 
-```shell
-git clone https://github.com/NVIDIA/apex.git
-cd apex/
-python setup.py install --cuda_ext --cpp_ext
+To be defined.
+
+### Training models
+
+You can train with a sklearn like api:
+
+```python
+from cdqa.pipeline.trainer import train
 ```
 
-You can now execute the [`examples`](examples) or the [`pipeline`](cdqa/pipeline) steps to use the application.
+### Making predictions
+
+```python
+from cdqa.pipeline.predictor import predict
+```
+
+### Practical examples
+
+This worfklow is described in our [`examples`](examples) notebook.
+
+You can also use [`pipeline`](cdqa/pipeline) scripts direclty to use the application:
+
+```
+python cdqa/pipeline/train.py --data
+python cdqa/pipeline/predict.py --data
+```
 
 ## Contributing
 
-To contribute to this repository, you will need to follow the git branch workflow:
-
-- Create a feature branch from `develop` branch with the name of the issue you want to fix.
-- Commit in this new feature branch until your fix is done while referencing the issue number in your commit message.
-- Open a pull request in order to merge you branch with the `develop` branch
-- Discuss with peers and update your code until pull request is accepted by repository admins.
-- Delete you feature branch.
-- Synchonise your repository with the latest `develop` changes.
-- Repeat!
-
-See more about this workflow at https://guides.github.com/introduction/flow/
+Read our [Contributing Guidelines](CONTRIBUTING.md).
 
 ## References
 

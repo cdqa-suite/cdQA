@@ -468,6 +468,7 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
     all_predictions = collections.OrderedDict()
     all_nbest_json = collections.OrderedDict()
     scores_diff_json = collections.OrderedDict()
+    final_predictions = collections.OrderedDict()
 
     for (example_index, example) in enumerate(all_examples):
         features = example_index_to_features[example_index]
@@ -612,10 +613,9 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
             nbest_json.append(output)
 
         assert len(nbest_json) >= 1
-
+        
         if not version_2_with_negative:
             all_predictions[example.qas_id] = nbest_json[0]["text"]
-            all_nbest_json[example.qas_id] = nbest_json
         else:
             # predict "" iff the null score - the score of best non-null > threshold
             score_diff = score_null - best_non_null_entry.start_logit - (
@@ -627,6 +627,14 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
                 all_predictions[example.qas_id] = best_non_null_entry.text
                 all_nbest_json[example.qas_id] = nbest_json
 
+        final_predictions[example.qas_id] = nbest_json[0]
+    
+    final_predictions_sorted = collections.OrderedDict(sorted(final_predictions.items(),
+                                                              key=lambda item: item[1]['start_logit'] + item[1]['end_logit'],
+                                                              reverse=True))
+    
+    final_prediction = list(final_predictions_sorted.items())[0][1]['text']
+
     with open(output_prediction_file, "w") as writer:
         writer.write(json.dumps(all_predictions, indent=4) + "\n")
 
@@ -637,7 +645,7 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
         with open(output_null_log_odds_file, "w") as writer:
             writer.write(json.dumps(scores_diff_json, indent=4) + "\n")
 
-    return all_predictions, all_nbest_json, scores_diff_json
+    return final_prediction, all_predictions, all_nbest_json, scores_diff_json
 
 
 def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
@@ -1053,7 +1061,7 @@ class BertQA(BaseEstimator):
         output_prediction_file = os.path.join(self.output_dir, "predictions.json")
         output_nbest_file = os.path.join(self.output_dir, "nbest_predictions.json")
         output_null_log_odds_file = os.path.join(self.output_dir, "null_odds.json")
-        all_predictions, all_nbest_json, scores_diff_json = write_predictions(
+        final_prediction, all_predictions, all_nbest_json, scores_diff_json = write_predictions(
             eval_examples,
             eval_features,
             all_results,
@@ -1067,4 +1075,4 @@ class BertQA(BaseEstimator):
             self.version_2_with_negative,
             self.null_score_diff_threshold)
 
-        return all_predictions, all_nbest_json, scores_diff_json
+        return final_prediction, all_predictions, all_nbest_json, scores_diff_json
