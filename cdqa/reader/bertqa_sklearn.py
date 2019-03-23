@@ -32,7 +32,7 @@ import torch
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
-from tqdm.auto import tqdm, trange
+from tqdm.autonotebook import tqdm, trange
 
 from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig, WEIGHTS_NAME, CONFIG_NAME
@@ -205,7 +205,7 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
 
 
 def convert_examples_to_features(examples, tokenizer, max_seq_length,
-                                 doc_stride, max_query_length, is_training):
+                                 doc_stride, max_query_length, is_training, verbose):
     """Loads a data file into a list of `InputBatch`s."""
 
     unique_id = 1000000000
@@ -323,7 +323,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
             if is_training and example.is_impossible:
                 start_position = 0
                 end_position = 0
-            if example_index < 20:
+            if example_index < 20 and verbose:
                 logger.info("*** Example ***")
                 logger.info("unique_id: %s" % (unique_id))
                 logger.info("example_index: %s" % (example_index))
@@ -789,7 +789,8 @@ class BertProcessor(BaseEstimator, TransformerMixin):
                  version_2_with_negative=False,
                  max_seq_length=384,
                  doc_stride=128,
-                 max_query_length=64):
+                 max_query_length=64,
+                 verbose=False):
 
         self.bert_model = bert_model
         self.do_lower_case = do_lower_case
@@ -798,6 +799,7 @@ class BertProcessor(BaseEstimator, TransformerMixin):
         self.max_seq_length = max_seq_length
         self.doc_stride = doc_stride
         self.max_query_length = max_query_length
+        self.verbose = verbose
 
     def fit(self, X, y=None):
         return self
@@ -815,7 +817,8 @@ class BertProcessor(BaseEstimator, TransformerMixin):
             max_seq_length=self.max_seq_length,
             doc_stride=self.doc_stride,
             max_query_length=self.max_query_length,
-            is_training=self.is_training)
+            is_training=self.is_training,
+            verbose=self.verbose)
         
         return examples, features
 
@@ -944,9 +947,9 @@ class BertQA(BaseEstimator):
                                 bias_correction=False,
                                 max_grad_norm=1.0)
             if self.loss_scale == 0:
-                optimizer = FP16_Optimizer(optimizer, dynamic_loss_scale=True)
+                optimizer = FP16_Optimizer(optimizer, dynamic_loss_scale=True, verbose=False)
             else:
-                optimizer = FP16_Optimizer(optimizer, static_loss_scale=self.loss_scale)
+                optimizer = FP16_Optimizer(optimizer, static_loss_scale=self.loss_scale, verbose=False)
         else:
             optimizer = BertAdam(optimizer_grouped_parameters,
                                 lr=self.learning_rate,
