@@ -6,15 +6,27 @@ https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com
 An end-to-end closed-domain question answering system with BERT and classic IR methods 📚
 
 - [Installation](#installation)
+  - [With pip](#with-pip)
+  - [From source](#from-source)
 - [Getting started](#getting-started)
   - [Preparing your data](#preparing-your-data)
   - [Training models](#training-models)
-  - [Making predictions](#making-predictions)
+  - [Using models](#using-models)
+  - [Downloading pre-trained models](#downloading-pre-trained-models)
   - [Practical examples](#practical-examples)
+  - [Deployment](#deployment)
 - [Contributing](#contributing)
 - [References](#references)
 
 ## Installation
+
+### With pip
+
+```shell
+pip install cdqa
+```
+
+### From source
 
 ```shell
 git clone https://github.com/fmikaelian/cdQA.git
@@ -31,7 +43,82 @@ python setup.py install --cuda_ext --cpp_ext
 
 ## Getting started
 
-To download existing data and models automatically from the Github releases, you will need a personal Github token. You can find [how to create one here](https://github.com/settings/tokens) (you only need to select the `repo` scope).
+### Preparing your data
+
+To use `cdqa` on a custom corpus you need to convert this corpus into a `pandas.DataFrame` with the following columns:
+
+| date       | title             | category             | link                         | abstract             | paragraphs                                           |
+| ---------- | ----------------- | -------------------- | ---------------------------- | -------------------- | ---------------------------------------------------- |
+| 25.03.2019 | The Article Title | The Article Category | https://the-article-link.com | The Article Abstract | ['Paragraph 1 of Article', 'Paragraph N of Article'] |
+
+### Training models
+
+First we train the document retriever:
+
+```python
+from cdqa.retriever.tfidf_doc_ranker import train_document_retriever
+
+df = pd.read_csv('your-custom-corpus.csv')
+article_vectorizer, article_tfidf_matrix = train_document_retriever(corpus=df['content'])
+```
+
+Then the document reader:
+
+```python
+from cdqa.reader.bertqa_sklearn import BertProcessor, BertQA
+
+train_processor = BertProcessor(bert_model='bert-base-uncased', do_lower_case=True, is_training=True)
+train_examples, train_features = train_processor.fit_transform(X='data/train-v1.1.json')
+
+model = BertQA(bert_model='bert-base-uncased',
+               train_batch_size=12,
+               learning_rate=3e-5,
+               num_train_epochs=2,
+               do_lower_case=True,
+               fp16=True,
+               output_dir='models/bert_qa_squad_v1.1_sklearn')
+
+model.fit(X=(train_examples, train_features))
+```
+
+### Using models
+
+First the document retriever finds the most relevant documents given an input question:
+
+```python
+question = 'Ask your question here'
+
+article_indices = predict_document_retriever(question=question,
+                                             paragraphs=None,
+                                             vectorizer=article_vectorizer,
+                                             tfidf_matrix=article_tfidf_matrix,
+                                             top_n=3,
+                                             metadata=df,
+                                             verbose=True)
+```
+
+Then these documents are processed:
+
+```python
+squad_examples = generate_squad_examples(question=question,
+                                         article_indices=article_indices,
+                                         metadata=df)
+
+test_processor = BertProcessor(bert_model='bert-base-uncased', do_lower_case=True, is_training=False)
+test_examples, test_features = test_processor.fit_transform(X=squad_examples)
+```
+
+Finally the document reader finds the best answer among the retrieved documents:
+
+```python
+final_prediction, all_predictions, all_nbest_json, scores_diff_json = model.predict(X=(test_examples, test_features))
+
+print(question, final_prediction)
+```
+
+### Downloading pre-trained models
+
+To download existing data and models automatically from the Github releases, you will need a personal Github token. You can find [how to create one here](https://github.com/settings/tokens) (you only need to select the `repo` scope). Save your token as an environment variable:
 
 ```shell
 export token='YOUR_GITHUB_TOKEN'
@@ -43,33 +130,20 @@ You can now execute the `download.py` to get all Github release assets:
 python cdqa/pipeline/download.py
 ```
 
-### Preparing your data
+The data is saved in  `/data` and the models in `/models`. You can load the models with `joblib.load`.
 
-To be defined.
-
-### Training models
-
-You can train with a sklearn like api:
-
-```python
-from cdqa.pipeline.trainer import train
-```
-
-### Making predictions
-
-```python
-from cdqa.pipeline.predictor import predict
-```
 
 ### Practical examples
 
-This worfklow is described in our [`examples`](examples) notebook.
+A complete worfklow is described in our [`examples`](examples) notebook.
 
-You can also use [`pipeline`](cdqa/pipeline) scripts direclty to use the application:
+### Deployment
 
-```
-python cdqa/pipeline/train.py --data
-python cdqa/pipeline/predict.py --data
+The `cdqa` [Dockerfile](Dockerfile) is based on the [`ai-station`](https://github.com/fmikaelian/ai-station) Docker image and can be used to deploy the application directly:
+
+```shell
+ais pipeline --train --data
+ais pipeline --predict --data
 ```
 
 ## Contributing

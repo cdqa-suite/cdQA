@@ -781,6 +781,46 @@ def _compute_softmax(scores):
 from sklearn.base import BaseEstimator, TransformerMixin
 
 class BertProcessor(BaseEstimator, TransformerMixin):
+    """
+    A scikit-learn transformer to convert SQuAD examples to BertQA input format.
+    
+    Parameters
+    ----------
+    bert_model : str
+        Bert pre-trained model selected in the list: bert-base-uncased,
+        bert-large-uncased, bert-base-cased, bert-large-cased, bert-base-multilingual-uncased,
+        bert-base-multilingual-cased, bert-base-chinese.
+    do_lower_case : bool, optional
+        Whether to lower case the input text. True for uncased models, False for cased models.
+    is_training : bool, optional
+        Whether you are in training phase.
+    version_2_with_negative : bool, optional
+        If true, the SQuAD examples contain some that do not have an answer.
+    max_seq_length : int, optional
+        The maximum total input sequence length after WordPiece tokenization. Sequences
+        longer than this will be truncated, and sequences shorter than this will be padded.
+    doc_stride : int, optional
+        When splitting up a long document into chunks, how much stride to take between chunks.
+    max_query_length : int, optional
+        The maximum number of tokens for the question. Questions longer than this will
+        be truncated to this length.
+    verbose : bool, optional
+        If true, all of the warnings related to data processing will be printed.
+
+    Returns
+    -------
+    examples : [type]
+        [description]
+    features : [type]
+        [description]
+
+    Examples
+    --------
+    >>> from cdqa.reader.bertqa_sklearn import BertProcessor
+    >>> processor = BertProcessor(bert_model='bert-base-uncased', do_lower_case=True, is_training=False)
+    >>> examples, features = processor.fit_transform(X=squad_examples)
+
+    """
 
     def __init__(self,
                  bert_model,
@@ -823,6 +863,84 @@ class BertProcessor(BaseEstimator, TransformerMixin):
         return examples, features
 
 class BertQA(BaseEstimator):
+    """
+    A scikit-learn estimator for BertForQuestionAnswering.
+    
+    Parameters
+    ----------
+    bert_model : str
+        Bert pre-trained model selected in the list: bert-base-uncased,
+        bert-large-uncased, bert-base-cased, bert-large-cased, bert-base-multilingual-uncased,
+        bert-base-multilingual-cased, bert-base-chinese.
+    custom_weights : bool, optional
+        [description] (the default is False)
+    train_batch_size : int, optional
+        Total batch size for training. (the default is 32)
+    predict_batch_size : int, optional
+        Total batch size for predictions. (the default is 8)
+    learning_rate : float, optional
+        The initial learning rate for Adam. (the default is 5e-5)
+    num_train_epochs : float, optional
+        Total number of training epochs to perform. (the default is 3.0)
+    warmup_proportion : float, optional
+        Proportion of training to perform linear learning rate warmup for. E.g., 0.1 = 10%% 
+        of training. (the default is 0.1)
+    n_best_size : int, optional
+        The total number of n-best predictions to generate in the nbest_predictions.json
+        output file. (the default is 20)
+    max_answer_length : int, optional
+        The maximum length of an answer that can be generated. This is needed because the start
+        and end predictions are not conditioned on one another. (the default is 30)
+    verbose_logging : bool, optional
+        If true, all of the warnings related to data processing will be printed.
+        A number of warnings are expected for a normal SQuAD evaluation. (the default is False)
+    no_cuda : bool, optional
+        Whether not to use CUDA when available (the default is False)
+    seed : int, optional
+        random seed for initialization (the default is 42)
+    gradient_accumulation_steps : int, optional
+        Number of updates steps to accumulate before performing a backward/update pass. (the default is 1)
+    do_lower_case : bool, optional
+        Whether to lower case the input text. True for uncased models, False for cased models. (the default is False)
+    local_rank : int, optional
+        local_rank for distributed training on gpus (the default is -1)
+    fp16 : bool, optional
+        Whether to use 16-bit float precision instead of 32-bit (the default is False)
+    loss_scale : int, optional
+        Loss scaling to improve fp16 numeric stability. Only used when fp16 set to True.
+        0 (default value): dynamic loss scaling.
+        Positive power of 2: static loss scaling value. (the default is 0)
+    version_2_with_negative : bool, optional
+        If true, the SQuAD examples contain some that do not have an answer. (the default is False)
+    null_score_diff_threshold : float, optional
+        If null_score - best_non_null is greater than the threshold predict null. (the default is 0.0)
+    output_dir : str, optional
+        The output directory where the model checkpoints and predictions will be written. (the default is '.')
+
+    Attributes
+    ----------
+    device : [type]
+        [description]
+    n_gpu : [type]
+        [description]
+    model : [type]
+        [description]
+
+    Examples
+    --------
+    >>> from cdqa.reader.bertqa_sklearn import BertQA
+    >>> model = BertQA(bert_model='bert-base-uncased',
+                train_batch_size=12,
+                learning_rate=3e-5,
+                num_train_epochs=2,
+                do_lower_case=True,
+                fp16=True,
+                output_dir='models/bert_qa_squad_v1.1_sklearn')
+    >>> model.fit(X=(train_examples, train_features))
+    >>> final_prediction, all_predictions, all_nbest_json, scores_diff_json = model.predict(X=(test_examples, test_features))
+
+    """
+
 
     def __init__(self,
                  bert_model,

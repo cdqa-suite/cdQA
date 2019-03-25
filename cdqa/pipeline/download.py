@@ -35,6 +35,7 @@ def download_releases_assets():
               ]
     
     for model in models:
+        print('Downloading: {}'.format(model))
         release = repo.get_release(model)
         assets = release.get_assets()
 
@@ -56,7 +57,6 @@ def download_releases_assets():
     assets = release.get_assets()
 
     for asset in assets:
-        print(asset.name, asset.url)
         response = requests.get(asset.url, headers=headers)
         directory = 'data'
         if not os.path.exists(os.path.join(directory, release.tag_name)):
