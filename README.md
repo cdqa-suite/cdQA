@@ -14,7 +14,7 @@ An end-to-end closed-domain question answering system with BERT and classic IR m
   - [Using models](#using-models)
   - [Downloading pre-trained models](#downloading-pre-trained-models)
   - [Practical examples](#practical-examples)
-  - [Deployment](#deployment)
+- [Deployment](#deployment)
 - [Contributing](#contributing)
 - [References](#references)
 
@@ -47,9 +47,9 @@ python setup.py install --cuda_ext --cpp_ext
 
 To use `cdqa` on a custom corpus you need to convert this corpus into a `pandas.DataFrame` with the following columns:
 
-| date       | title             | category             | link                         | abstract             | paragraphs                                           |
-| ---------- | ----------------- | -------------------- | ---------------------------- | -------------------- | ---------------------------------------------------- |
-| 25.03.2019 | The Article Title | The Article Category | https://the-article-link.com | The Article Abstract | ['Paragraph 1 of Article', 'Paragraph N of Article'] |
+| date     | title             | category             | link                         | abstract             | paragraphs                                           | content                                         |
+| -------- | ----------------- | -------------------- | ---------------------------- | -------------------- | ---------------------------------------------------- | ----------------------------------------------- |
+| DD/MM/YY | The Article Title | The Article Category | https://the-article-link.com | The Article Abstract | ['Paragraph 1 of Article', 'Paragraph N of Article'] | 'Paragraph 1 of Article Paragraph N of Article' |
 
 ### Training models
 
@@ -137,7 +137,7 @@ The data is saved in  `/data` and the models in `/models`. You can load the mode
 
 A complete worfklow is described in our [`examples`](examples) notebook.
 
-### Deployment
+## Deployment
 
 The `cdqa` [Dockerfile](Dockerfile) is based on the [`ai-station`](https://github.com/fmikaelian/ai-station) Docker image and can be used to deploy the application directly:
 
