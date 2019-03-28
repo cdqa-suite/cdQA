@@ -5,3 +5,4 @@ install:
   - pip install --quiet .
 script:
   - pytest
+  - codecov --token=$CODECOV_TOKEN
