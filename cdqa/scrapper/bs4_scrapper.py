@@ -8,6 +8,25 @@ import os
 import numpy as np
 
 def fetch_bnpp_newsroom(output_dir=None):
+    """
+    [summary]
+    
+    Parameters
+    ----------
+    output_dir : [type], optional
+        [description] (the default is None, which [default_description])
+    
+    Returns
+    -------
+    [type]
+        [description]
+
+    Examples
+    --------
+    >>> 
+
+    """
+
 
     # get news homepage
     page = requests.get('https://group.bnpparibas/en/all-news')

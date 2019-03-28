@@ -6,6 +6,7 @@ https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com
 An end-to-end closed-domain question answering system with BERT and classic IR methods 📚
 
 - [Installation](#installation)
+  - [Hardware Requirements](#hardware-requirements)
   - [With pip](#with-pip)
   - [From source](#from-source)
 - [Getting started](#getting-started)
@@ -20,6 +21,16 @@ An end-to-end closed-domain question answering system with BERT and classic IR m
 
 ## Installation
 
+### Hardware Requirements
+
+Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI (Ubuntu) Version 22.0 + a single Tesla V100 16GB with 16-bits training enabled (to accelerate training and prediction). To enable this feature, you will need to install [`apex`](https://github.com/nvidia/apex):
+
+```shell
+git clone https://github.com/NVIDIA/apex.git
+cd apex/
+python setup.py install --cuda_ext --cpp_ext
+```
+
 ### With pip
 
 ```shell
@@ -31,14 +42,6 @@ pip install cdqa
 ```shell
 git clone https://github.com/fmikaelian/cdQA.git
 pip install .
-```
-
-Note: Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI + a single Tesla V100 16GB with 16-bits training enabled (to accelerate training and prediction). To enable this feature, you will need to install [`apex`](https://github.com/nvidia/apex):
-
-```shell
-git clone https://github.com/NVIDIA/apex.git
-cd apex/
-python setup.py install --cuda_ext --cpp_ext
 ```
 
 ## Getting started

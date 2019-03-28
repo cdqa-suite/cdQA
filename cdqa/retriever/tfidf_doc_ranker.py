@@ -4,11 +4,62 @@ import time
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 def train_document_retriever(corpus):
+    """
+    trains a tf-idf matrix from a corpus of documents
+    
+    Parameters
+    ----------
+    corpus : iterable
+        an iterable which yields either str, unicode or file objects
+    
+    Returns
+    -------
+    vectorizer : TfidfVectorizer
+        See https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
+    tfidf_matrix : sparse matrix, [n_samples, n_features]
+        Tf-idf-weighted document-term matrix.
+
+    Examples
+    --------
+    >>> 
+
+    """
+
     vectorizer = TfidfVectorizer(ngram_range=(1, 2), max_df=0.85, stop_words='english')
     tfidf_matrix = vectorizer.fit_transform(corpus)
     return vectorizer, tfidf_matrix
 
 def predict_document_retriever(question, paragraphs, vectorizer, tfidf_matrix, top_n, metadata, verbose=True):
+    """
+    finds the most N similar documents of a given input document by taking
+    the dot product of the vectorized input document and the trained tf-idf matrix
+
+    Parameters
+    ----------
+    question : str
+        input question or query
+    paragraphs : iterable
+        an iterable which yields either str, unicode or file objects
+        
+    vectorizer : TfidfTransformer
+        See https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
+    tfidf_matrix : sparse matrix, [n_samples, n_features]
+        Tf-idf-weighted document-term matrix.
+    top_n : int
+        maximum number of top articles to retrieve
+    metadata : pandas.DataFrame
+        dataframe containing your corpus of documents metadata
+        header should be of format: date, title, category, link, abstract, paragraphs, content.
+    verbose : bool, optional
+        If true, all of the warnings related to data processing will be printed.
+
+    Examples
+    --------
+    >>> 
+
+    """
+
+
     t0 = time.time()
     question_vector = vectorizer.transform([question])
     scores = pd.DataFrame(tfidf_matrix.dot(question_vector.T).toarray())
