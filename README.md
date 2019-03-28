@@ -6,9 +6,9 @@ https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com
 An end-to-end closed-domain question answering system with BERT and classic IR methods 📚
 
 - [Installation](#installation)
-  - [Hardware Requirements](#hardware-requirements)
   - [With pip](#with-pip)
   - [From source](#from-source)
+  - [Hardware Requirements](#hardware-requirements)
 - [Getting started](#getting-started)
   - [Preparing your data](#preparing-your-data)
   - [Training models](#training-models)
@@ -21,16 +21,6 @@ An end-to-end closed-domain question answering system with BERT and classic IR m
 
 ## Installation
 
-### Hardware Requirements
-
-Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI (Ubuntu) Version 22.0 + a single Tesla V100 16GB with 16-bits training enabled (to accelerate training and prediction). To enable this feature, you will need to install [`apex`](https://github.com/nvidia/apex):
-
-```shell
-git clone https://github.com/NVIDIA/apex.git
-cd apex/
-python setup.py install --cuda_ext --cpp_ext
-```
-
 ### With pip
 
 ```shell
@@ -41,7 +31,18 @@ pip install cdqa
 
 ```shell
 git clone https://github.com/fmikaelian/cdQA.git
+cd cdQA
 pip install .
+```
+
+### Hardware Requirements
+
+Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI (Ubuntu) Version 22.0 + a single Tesla V100 16GB with 16-bits training enabled (to accelerate training and prediction). To enable this feature, you will need to install [`apex`](https://github.com/nvidia/apex):
+
+```shell
+git clone https://github.com/NVIDIA/apex.git
+cd apex/
+python setup.py install --cuda_ext --cpp_ext
 ```
 
 ## Getting started
@@ -52,13 +53,14 @@ To use `cdqa` on a custom corpus you need to convert this corpus into a `pandas.
 
 | date     | title             | category             | link                         | abstract             | paragraphs                                           | content                                         |
 | -------- | ----------------- | -------------------- | ---------------------------- | -------------------- | ---------------------------------------------------- | ----------------------------------------------- |
-| DD/MM/YY | The Article Title | The Article Category | https://the-article-link.com | The Article Abstract | ['Paragraph 1 of Article', 'Paragraph N of Article'] | 'Paragraph 1 of Article Paragraph N of Article' |
+| DD/MM/YY | The Article Title | The Article Category | https://the-article-link.com | The Article Abstract | [Paragraph 1 of Article, Paragraph N of Article] | Paragraph 1 of Article Paragraph N of Article |
 
 ### Training models
 
 First we train the document retriever:
 
 ```python
+import pandas as pd
 from cdqa.retriever.tfidf_doc_ranker import train_document_retriever
 
 df = pd.read_csv('your-custom-corpus.csv')
@@ -89,6 +91,9 @@ model.fit(X=(train_examples, train_features))
 First the document retriever finds the most relevant documents given an input question:
 
 ```python
+from cdqa.retriever.tfidf_doc_ranker import predict_document_retriever
+from cdqa.utils.converter import generate_squad_examples
+
 question = 'Ask your question here'
 
 article_indices = predict_document_retriever(question=question,

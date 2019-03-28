@@ -1,5 +1,6 @@
 pandas
 scikit-learn
+joblib
 matplotlib
 pytorch-pretrained-bert
 beautifulsoup4
