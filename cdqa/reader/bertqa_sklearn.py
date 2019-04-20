@@ -34,8 +34,8 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
 from torch.utils.data.distributed import DistributedSampler
 from tqdm.autonotebook import tqdm, trange
 
-from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
-from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig, WEIGHTS_NAME, CONFIG_NAME
+from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE, WEIGHTS_NAME, CONFIG_NAME
+from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
                                                   BertTokenizer,
@@ -46,9 +46,6 @@ if sys.version_info[0] == 2:
 else:
     import pickle
 
-logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                    datefmt = '%m/%d/%Y %H:%M:%S',
-                    level = logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -916,6 +913,11 @@ class BertQA(BaseEstimator):
         If null_score - best_non_null is greater than the threshold predict null. (the default is 0.0)
     output_dir : str, optional
         The output directory where the model checkpoints and predictions will be written. (the default is '.')
+    server_ip : str, optional
+        Can be used for distant debugging. (the default is '')
+    server_port : str, optional
+        Can be used for distant debugging. (the default is '')
+
 
     Attributes
     ----------
@@ -962,7 +964,9 @@ class BertQA(BaseEstimator):
                  loss_scale=0,
                  version_2_with_negative=False,
                  null_score_diff_threshold=0.0,
-                 output_dir='.'):
+                 output_dir='.',
+                 server_ip='',
+                 server_port=''):
 
         self.bert_model = bert_model
         self.custom_weights = custom_weights
@@ -984,6 +988,15 @@ class BertQA(BaseEstimator):
         self.version_2_with_negative = version_2_with_negative
         self.null_score_diff_threshold = null_score_diff_threshold
         self.output_dir = output_dir
+        self.server_ip = server_ip
+        self.server_port = server_port
+
+        if self.server_ip and self.server_port:
+            # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
+            import ptvsd
+            print("Waiting for debugger attach")
+            ptvsd.enable_attach(address=(self.server_ip, self.server_port), redirect_output=True)
+            ptvsd.wait_for_attach()
 
         if self.local_rank == -1 or self.no_cuda:
             self.device = torch.device("cuda" if torch.cuda.is_available() and not self.no_cuda else "cpu")
@@ -994,6 +1007,11 @@ class BertQA(BaseEstimator):
             self.n_gpu = 1
             # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
             torch.distributed.init_process_group(backend='nccl')
+        
+        logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                            datefmt = '%m/%d/%Y %H:%M:%S',
+                            level = logging.INFO if self.local_rank in [-1, 0] else logging.WARN)
+
         logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
             self.device, self.n_gpu, bool(self.local_rank != -1), self.fp16))
 
@@ -1096,7 +1114,7 @@ class BertQA(BaseEstimator):
 
         model.train()
         for _ in trange(int(self.num_train_epochs), desc="Epoch"):
-            for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
+            for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration", disable=self.local_rank not in [-1, 0])):
                 if self.n_gpu == 1:
                     batch = tuple(t.to(self.device) for t in batch) # multi-gpu does scattering it-self
                 input_ids, input_mask, segment_ids, start_positions, end_positions = batch
@@ -1121,21 +1139,23 @@ class BertQA(BaseEstimator):
                     optimizer.zero_grad()
                     global_step += 1
 
-        # Save a trained model and the associated configuration
+        # Save a trained model, configuration and tokenizer
         model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
+
+        # If we save using the predefined names, we can load using `from_pretrained`
         output_model_file = os.path.join(self.output_dir, WEIGHTS_NAME)
-        torch.save(model_to_save.state_dict(), output_model_file)
         output_config_file = os.path.join(self.output_dir, CONFIG_NAME)
-        with open(output_config_file, 'w') as f:
-            f.write(model_to_save.config.to_json_string())
+
+        torch.save(model_to_save.state_dict(), output_model_file)
+        model_to_save.config.to_json_file(output_config_file)
+        tokenizer.save_vocabulary(self.output_dir)
 
         if self.custom_weights:
             model = BertForQuestionAnswering.from_pretrained(self.bert_model)
         else:
-            # Load a trained model and config that you have fine-tuned
-            config = BertConfig(output_config_file)
-            model = BertForQuestionAnswering(config)
-            model.load_state_dict(torch.load(output_model_file))
+            # Load a trained model and vocabulary that you have fine-tuned
+            model = BertForQuestionAnswering.from_pretrained(self.output_dir)
+            tokenizer = BertTokenizer.from_pretrained(self.output_dir, do_lower_case=self.do_lower_case)
 
         model.to(self.device)
         self.model = model
@@ -1163,7 +1183,7 @@ class BertQA(BaseEstimator):
         self.model.eval()
         all_results = []
         logger.info("Start evaluating")
-        for input_ids, input_mask, segment_ids, example_indices in tqdm(eval_dataloader, desc="Evaluating"):
+        for input_ids, input_mask, segment_ids, example_indices in tqdm(eval_dataloader, desc="Evaluating", disable=self.local_rank not in [-1, 0]):
             if len(all_results) % 1000 == 0:
                 logger.info("Processing example: %d" % (len(all_results)))
             input_ids = input_ids.to(self.device)
