@@ -31,9 +31,9 @@ def download_releases_assets():
     # download models
     models = ['bert_qa_squad_v1.1',
               'bert_qa_squad_v1.1_dev',
-              'bert_qa_squad_v1.1_sklearn'
-              ]
-    
+              'bert_qa_squad_v1.1_sklearn',
+              'bert_qa_squad_vCPU']
+
     for model in models:
         print('Downloading: {}'.format(model))
         release = repo.get_release(model)
