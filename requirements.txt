@@ -9,3 +9,4 @@ tqdm
 prettytable
 wget
 PyGithub
+flask

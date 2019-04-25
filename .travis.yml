@@ -4,5 +4,5 @@ python:
 install:
   - pip install --quiet .
 script:
-  - pytest
+  - pytest --flake8
   - codecov --token=$CODECOV_TOKEN

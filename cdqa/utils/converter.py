@@ -3,7 +3,7 @@ import os
 from tqdm import tqdm
 import uuid
 
-def df2squad(df, filename, squad_version='v2.0', output_dir=None):
+def df2squad(df, squad_version='v2.0', output_dir=None, filename=None):
    """
     Converts a pandas dataframe with columns ['title', 'content'] to a json file with SQuAD format.
 
@@ -11,22 +11,28 @@ def df2squad(df, filename, squad_version='v2.0', output_dir=None):
    ----------
     df : pandas.DataFrame
         a pandas dataframe with columns ['title', 'content']
-    filename : [type]
-        [description]
     squad_version : str, optional
         the SQuAD dataset version format (the default is 'v2.0')
-    output_dir : [type], optional
+    output_dir : str, optional
         Enable export of output (the default is None)
-   
+    filename : str, optional
+        [description]
+
    Returns
    -------
-   json_data
+   json_data: dict
        A json object with SQuAD format
 
     Examples
     --------
-    >>> 
+    >>> from ast import literal_eval
+    >>> import pandas as pd
+    >>> from cdqa.utils.converter import df2squad, filter_paragraphs
 
+    >>> df = pd.read_csv('../data/bnpp_newsroom_v1.0/bnpp_newsroom-v1.0.csv', converters={'paragraphs': literal_eval})
+    >>> df['paragraphs'] = df['paragraphs'].apply(filter_paragraphs)
+
+    >>> json_data = df2squad(df=df, squad_version='v2.0', output_dir='../data', filename='bnpp_newsroom-v1.0')
    """
 
 
@@ -50,7 +56,7 @@ def df2squad(df, filename, squad_version='v2.0', output_dir=None):
 
 def generate_squad_examples(question, article_indices, metadata):
     """
-    [summary]
+    Creates a SQuAD examples json object for a given for a given question using outputs of retriever and document database.
     
     Parameters
     ----------
@@ -63,12 +69,15 @@ def generate_squad_examples(question, article_indices, metadata):
     
     Returns
     -------
-    [type]
+    squad_examples: list
         [description]
 
     Examples
     --------
-    >>> 
+    >>> from cdqa.utils.converter import generate_squad_examples
+    >>> squad_examples = generate_squad_examples(question='Since when does the the Excellence Program of BNP Paribas exist?',
+                                         article_indices=[788, 408, 2419],
+                                         metadata=df)
 
     """
 
@@ -94,7 +103,7 @@ def generate_squad_examples(question, article_indices, metadata):
 
 def filter_paragraphs(paragraphs):
     """
-    [summary]
+    Filters out paragraphs shorter than X words and longer than Y words
     
     Parameters
     ----------
@@ -108,10 +117,14 @@ def filter_paragraphs(paragraphs):
 
     Examples
     --------
-    >>> 
+    >>> from ast import literal_eval
+    >>> import pandas as pd
+    >>> from cdqa.utils.converter import filter_paragraphs
+
+    >>> df = pd.read_csv('../data/bnpp_newsroom_v1.0/bnpp_newsroom-v1.0.csv', converters={'paragraphs': literal_eval})
+    >>> df['paragraphs'] = df['paragraphs'].apply(filter_paragraphs)
 
     """
 
-    # filter out paragraphs shorter than 10 words and longer than 250 words
     paragraphs_filtered = [paragraph for paragraph in paragraphs if len(paragraph.split()) >= 10 and len(paragraph.split()) <= 250]
     return paragraphs_filtered

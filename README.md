@@ -14,9 +14,12 @@ An end-to-end closed-domain question answering system with BERT and classic IR m
   - [Preparing your data](#preparing-your-data)
   - [Training models](#training-models)
   - [Using models](#using-models)
+  - [Evaluating models](#evaluating-models)
   - [Downloading pre-trained models](#downloading-pre-trained-models)
   - [Practical examples](#practical-examples)
 - [Deployment](#deployment)
+  - [Manual](#manual)
+  - [With docker](#with-docker)
 - [Contributing](#contributing)
 - [References](#references)
 
@@ -33,7 +36,7 @@ pip install cdqa
 ```shell
 git clone https://github.com/fmikaelian/cdQA.git
 cd cdQA
-pip install .
+pip install -e .
 ```
 
 ### Hardware Requirements
@@ -125,6 +128,14 @@ final_prediction, all_predictions, all_nbest_json, scores_diff_json = model.pred
 print(question, final_prediction)
 ```
 
+### Evaluating models
+
+In order to evaluate models on your custom dataset you will need to annotate it. For this you can use [`cdQA-annotator`](https://github.com/fmikaelian/cdQA-annotator), a web-based annotator for closed-domain question answering datasets with SQuAD format. Then you can split your dataset into train and test sets as follows and run the evaluation script.
+
+```python
+python evaluate-v1.1.py data/cdqa-v1.1.json logs/your_model/predictions.json
+```
+
 ### Downloading pre-trained models
 
 To download existing data and models automatically from the Github releases, you will need a personal Github token. You can find [how to create one here](https://github.com/settings/tokens) (you only need to select the `repo` scope). Save your token as an environment variable:
@@ -148,12 +159,25 @@ A complete worfklow is described in our [`examples`](examples) notebook.
 
 ## Deployment
 
-The `cdqa` [Dockerfile](Dockerfile) is based on the [`ai-station`](https://github.com/fmikaelian/ai-station) Docker image and can be used to deploy the application directly:
+### Manual
+
+You can deploy a `cdQA` REST API by executing:
 
 ```shell
-ais pipeline --train --data
-ais pipeline --predict --data
+FLASK_APP=api.py flask run -h 0.0.0.0
 ```
+
+To try it, execute:
+
+```shell
+http localhost:5000/api q=='your question here'
+```
+
+If you wish to serve a user interface, follow the instructions of [cdQA-ui](https://github.com/fmikaelian/cdQA-ui), a web interface developed for `cdQA`.
+
+### With docker
+
+You can use the [Dockerfile](Dockerfile) to deploy the full `cdQA` app.
 
 ## Contributing
 

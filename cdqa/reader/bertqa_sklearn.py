@@ -36,7 +36,7 @@ from tqdm.autonotebook import tqdm, trange
 
 from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE, WEIGHTS_NAME, CONFIG_NAME
 from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig
-from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
+from pytorch_pretrained_bert.optimization import BertAdam
 from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
                                                   BertTokenizer,
                                                   whitespace_tokenize)
@@ -806,10 +806,10 @@ class BertProcessor(BaseEstimator, TransformerMixin):
 
     Returns
     -------
-    examples : [type]
-        [description]
-    features : [type]
-        [description]
+    examples : list
+        SquadExample
+    features : list
+        InputFeatures
 
     Examples
     --------
@@ -921,11 +921,11 @@ class BertQA(BaseEstimator):
 
     Attributes
     ----------
-    device : [type]
+    device : torch.device
         [description]
-    n_gpu : [type]
+    n_gpu : int
         [description]
-    model : [type]
+    model : pytorch_pretrained_bert.modeling.BertForQuestionAnswering
         [description]
 
     Examples
