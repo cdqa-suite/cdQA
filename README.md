@@ -1,6 +1,8 @@
-# cdQA
+# cdQA <img src="https://cdn.discordapp.com/emojis/513893717816508416.gif" width="40" height="40"/>
 
 [![Build Status](https://travis-ci.com/fmikaelian/cdQA.svg?token=Vzy9RRKRZ41ynd9q2BRX&branch=develop)](https://travis-ci.com/fmikaelian/cdQA) [![codecov](https://codecov.io/gh/fmikaelian/cdQA/branch/develop/graph/badge.svg?token=F16X0IU6RT)](https://codecov.io/gh/fmikaelian/cdQA)
+[![Binder](https://mybinder.org/badge.svg)]()
+[![Colab](https://colab.research.google.com/assets/colab-badge.svg)]()
  [![License](
 https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com/licenses/mit/)
 
@@ -55,8 +57,8 @@ python setup.py install --cuda_ext --cpp_ext
 
 To use `cdqa` on a custom corpus you need to convert this corpus into a `pandas.DataFrame` with the following columns:
 
-| date     | title             | category             | link                         | abstract             | paragraphs                                           | content                                         |
-| -------- | ----------------- | -------------------- | ---------------------------- | -------------------- | ---------------------------------------------------- | ----------------------------------------------- |
+| date     | title             | category             | link                         | abstract             | paragraphs                                       | content                                       |
+| -------- | ----------------- | -------------------- | ---------------------------- | -------------------- | ------------------------------------------------ | --------------------------------------------- |
 | DD/MM/YY | The Article Title | The Article Category | https://the-article-link.com | The Article Abstract | [Paragraph 1 of Article, Paragraph N of Article] | Paragraph 1 of Article Paragraph N of Article |
 
 ### Training models
@@ -130,11 +132,27 @@ print(question, final_prediction)
 
 ### Evaluating models
 
-In order to evaluate models on your custom dataset you will need to annotate it. For this you can use [`cdQA-annotator`](https://github.com/fmikaelian/cdQA-annotator), a web-based annotator for closed-domain question answering datasets with SQuAD format. Then you can split your dataset into train and test sets as follows and run the evaluation script.
+In order to evaluate models on your custom dataset you will need to annotate it. The annotation process can be done in 4 steps:
 
-```python
-python evaluate-v1.1.py data/cdqa-v1.1.json logs/your_model/predictions.json
-```
+1. Convert your pandas DataFrame into a json file with SQuAD format
+
+    ```python
+    ```
+
+2. Use an annotator to add ground truth question-answer pairs
+
+    Please refer to [`cdQA-annotator`](https://github.com/fmikaelian/cdQA-annotator), a web-based annotator for closed-domain question answering datasets with SQuAD format.
+
+3. Split your dataset into train and test sets
+
+    ```python
+    ```
+
+4. Evaluate your model
+
+    ```python
+    python evaluate-v1.1.py data/cdqa-v1.1.json logs/your_model/predictions.json
+    ```
 
 ### Downloading pre-trained models
 
@@ -150,7 +168,7 @@ You can now execute the `download.py` to get all Github release assets:
 python cdqa/pipeline/download.py
 ```
 
-The data is saved in  `/data` and the models in `/models`. You can load the models with `joblib.load`.
+The data is saved in  `/data` and the models in `/models`. You can load the models with `joblib.load()`.
 
 
 ### Practical examples
@@ -185,10 +203,11 @@ Read our [Contributing Guidelines](CONTRIBUTING.md).
 
 ## References
 
-| Type              | Title                                                                                                                | Author                                                                                 | Year |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---- |
-| :newspaper: Paper | [End-to-End Open-Domain Question Answering with BERTserini](https://arxiv.org/abs/1902.01718)                        | Wei Yang, Yuqing Xie, Aileen Lin, Xingyu Li, Luchen Tan, Kun Xiong, Ming Li, Jimmy Lin | 2019 |
-| :newspaper: Paper | [Contextual Word Representations: A Contextual Introduction](https://arxiv.org/abs/1902.06006)                       | Noah A. Smith                                                                          | 2019 |
-| :newspaper: Paper | [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805) | Jacob Devlin, Ming-Wei Chang, Kenton Lee, Kristina Toutanova                           | 2018 |
-| :newspaper: Paper | [Neural Reading Comprehension and Beyond](https://cs.stanford.edu/people/danqi/papers/thesis.pdf)                    | Danqi Chen                                                                             | 2018 |
-| :newspaper: Paper | [Reading Wikipedia to Answer Open-Domain Questions](https://arxiv.org/abs/1704.00051)                                | Danqi Chen, Adam Fisch, Jason Weston, Antoine Bordes                                   | 2017 |
+| Type                 | Title                                                                                                                | Author                                                                                 | Year |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---- |
+| :video_camera: Video | [Stanford CS224N: NLP with Deep Learning Lecture 10 – Question Answering](https://youtube.com/watch?v=yIdF-17HwSk)   | Christopher Manning                                                                    | 2019 |
+| :newspaper: Paper    | [End-to-End Open-Domain Question Answering with BERTserini](https://arxiv.org/abs/1902.01718)                        | Wei Yang, Yuqing Xie, Aileen Lin, Xingyu Li, Luchen Tan, Kun Xiong, Ming Li, Jimmy Lin | 2019 |
+| :newspaper: Paper    | [Contextual Word Representations: A Contextual Introduction](https://arxiv.org/abs/1902.06006)                       | Noah A. Smith                                                                          | 2019 |
+| :newspaper: Paper    | [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805) | Jacob Devlin, Ming-Wei Chang, Kenton Lee, Kristina Toutanova                           | 2018 |
+| :newspaper: Paper    | [Neural Reading Comprehension and Beyond](https://cs.stanford.edu/people/danqi/papers/thesis.pdf)                    | Danqi Chen                                                                             | 2018 |
+| :newspaper: Paper    | [Reading Wikipedia to Answer Open-Domain Questions](https://arxiv.org/abs/1704.00051)                                | Danqi Chen, Adam Fisch, Jason Weston, Antoine Bordes                                   | 2017 |
