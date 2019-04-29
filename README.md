@@ -68,10 +68,11 @@ First we train the document retriever:
 
 ```python
 import pandas as pd
-from cdqa.retriever.tfidf_doc_ranker import train_document_retriever
+from cdqa.retriever.tfidf_sklearn import TfidfRetriever
 
 df = pd.read_csv('your-custom-corpus.csv')
-article_vectorizer, article_tfidf_matrix = train_document_retriever(corpus=df['content'])
+retriever = TfidfRetriever(metadata=df)
+retriever.fit(X=df['content'])
 ```
 
 Then the document reader:
@@ -82,7 +83,7 @@ from cdqa.reader.bertqa_sklearn import BertProcessor, BertQA
 train_processor = BertProcessor(bert_model='bert-base-uncased', do_lower_case=True, is_training=True)
 train_examples, train_features = train_processor.fit_transform(X='data/train-v1.1.json')
 
-model = BertQA(bert_model='bert-base-uncased',
+reader = BertQA(bert_model='bert-base-uncased',
                train_batch_size=12,
                learning_rate=3e-5,
                num_train_epochs=2,
@@ -90,7 +91,7 @@ model = BertQA(bert_model='bert-base-uncased',
                fp16=True,
                output_dir='models/bert_qa_squad_v1.1_sklearn')
 
-model.fit(X=(train_examples, train_features))
+reader.fit(X=(train_examples, train_features))
 ```
 
 ### Using models
@@ -98,25 +99,18 @@ model.fit(X=(train_examples, train_features))
 First the document retriever finds the most relevant documents given an input question:
 
 ```python
-from cdqa.retriever.tfidf_doc_ranker import predict_document_retriever
-from cdqa.utils.converter import generate_squad_examples
-
 question = 'Ask your question here'
 
-article_indices = predict_document_retriever(question=question,
-                                             paragraphs=None,
-                                             vectorizer=article_vectorizer,
-                                             tfidf_matrix=article_tfidf_matrix,
-                                             top_n=3,
-                                             metadata=df,
-                                             verbose=True)
+closest_docs_indices = retriever.predict(X=question)
 ```
 
 Then these documents are processed:
 
 ```python
+from cdqa.utils.converter import generate_squad_examples
+
 squad_examples = generate_squad_examples(question=question,
-                                         article_indices=article_indices,
+                                         closest_docs_indices=closest_docs_indices,
                                          metadata=df)
 
 test_processor = BertProcessor(bert_model='bert-base-uncased', do_lower_case=True, is_training=False)
@@ -166,7 +160,7 @@ export token='YOUR_GITHUB_TOKEN'
 You can now execute the `download.py` to get all Github release assets:
 
 ```shell
-python cdqa/pipeline/download.py
+python cdqa/utils/download.py
 ```
 
 The data is saved in  `/data` and the models in `/models`. You can load the models with `joblib.load()`.
