@@ -54,7 +54,7 @@ def df2squad(df, squad_version='v2.0', output_dir=None, filename=None):
 
    return json_data
 
-def generate_squad_examples(question, article_indices, metadata):
+def generate_squad_examples(question, closest_docs_indices, metadata):
     """
     Creates a SQuAD examples json object for a given for a given question using outputs of retriever and document database.
     
@@ -62,7 +62,7 @@ def generate_squad_examples(question, article_indices, metadata):
     ----------
     question : [type]
         [description]
-    article_indices : [type]
+    closest_docs_indices : [type]
         [description]
     metadata : [type]
         [description]
@@ -76,7 +76,7 @@ def generate_squad_examples(question, article_indices, metadata):
     --------
     >>> from cdqa.utils.converter import generate_squad_examples
     >>> squad_examples = generate_squad_examples(question='Since when does the the Excellence Program of BNP Paribas exist?',
-                                         article_indices=[788, 408, 2419],
+                                         closest_docs_indices=[788, 408, 2419],
                                          metadata=df)
 
     """
@@ -84,7 +84,7 @@ def generate_squad_examples(question, article_indices, metadata):
     
     squad_examples = []
     
-    metadata_sliced = metadata.loc[article_indices]
+    metadata_sliced = metadata.loc[closest_docs_indices]
     
     for index, row in tqdm(metadata_sliced.iterrows()):
         temp = {'title': row['title'],

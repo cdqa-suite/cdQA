@@ -1,10 +1,11 @@
 # cdQA <img src="https://cdn.discordapp.com/emojis/513893717816508416.gif" width="40" height="40"/>
 
 [![Build Status](https://travis-ci.com/fmikaelian/cdQA.svg?token=Vzy9RRKRZ41ynd9q2BRX&branch=develop)](https://travis-ci.com/fmikaelian/cdQA) [![codecov](https://codecov.io/gh/fmikaelian/cdQA/branch/develop/graph/badge.svg?token=F16X0IU6RT)](https://codecov.io/gh/fmikaelian/cdQA)
+[![PyPI Downloads](https://img.shields.io/pypi/v/tensorflow.svg)](https://pypi.org/project/tensorflow/)
+[![PyPI Version](https://img.shields.io/pypi/dm/tensorflow.svg)](https://pypi.org/project/tensorflow/)
 [![Binder](https://mybinder.org/badge.svg)]()
 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)]()
- [![License](
-https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com/licenses/mit/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com/licenses/mit/)
 
 An end-to-end closed-domain question answering system with BERT and classic IR methods 📚
 
@@ -169,7 +170,6 @@ python cdqa/pipeline/download.py
 ```
 
 The data is saved in  `/data` and the models in `/models`. You can load the models with `joblib.load()`.
-
 
 ### Practical examples
 

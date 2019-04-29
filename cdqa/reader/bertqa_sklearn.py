@@ -1186,7 +1186,7 @@ class BertQA(BaseEstimator):
         self.model.eval()
         all_results = []
         logger.info("Start evaluating")
-        for input_ids, input_mask, segment_ids, example_indices in tqdm(eval_dataloader, desc="Evaluating", disable=self.local_rank not in [-1, 0]):
+        for input_ids, input_mask, segment_ids, example_indices in eval_dataloader:
             if len(all_results) % 1000 == 0:
                 logger.info("Processing example: %d" % (len(all_results)))
             input_ids = input_ids.to(self.device)
