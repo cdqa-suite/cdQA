@@ -939,7 +939,7 @@ class BertQA(BaseEstimator):
                 fp16=True,
                 output_dir='models/bert_qa_squad_v1.1_sklearn')
     >>> model.fit(X=(train_examples, train_features))
-    >>> final_prediction, all_predictions, all_nbest_json, scores_diff_json = model.predict(X=(test_examples, test_features))
+    >>> final_prediction = model.predict(X=(test_examples, test_features))
 
     """
 
@@ -1219,4 +1219,4 @@ class BertQA(BaseEstimator):
             self.version_2_with_negative,
             self.null_score_diff_threshold)
 
-        return final_prediction, all_predictions, all_nbest_json, scores_diff_json
+        return final_prediction

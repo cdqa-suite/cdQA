@@ -120,7 +120,7 @@ test_examples, test_features = test_processor.fit_transform(X=squad_examples)
 Finally the document reader finds the best answer among the retrieved documents:
 
 ```python
-final_prediction, all_predictions, all_nbest_json, scores_diff_json = model.predict(X=(test_examples, test_features))
+final_prediction = model.predict(X=(test_examples, test_features))
 
 print(question, final_prediction)
 ```
