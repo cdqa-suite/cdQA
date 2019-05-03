@@ -6,3 +6,9 @@ install:
 script:
   - pytest --flake8
   - codecov --token=$CODECOV_TOKEN
+deploy:
+  provider: pypi
+  user: $PYPI_USERNAME
+  password: $PYPI_PASSWORD
+  on:
+    branch: master
