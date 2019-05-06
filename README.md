@@ -1,8 +1,9 @@
 # cdQA <img src="https://cdn.discordapp.com/emojis/513893717816508416.gif" width="40" height="40"/>
 
-[![Build Status](https://travis-ci.com/fmikaelian/cdQA.svg?token=Vzy9RRKRZ41ynd9q2BRX&branch=develop)](https://travis-ci.com/fmikaelian/cdQA) [![codecov](https://codecov.io/gh/fmikaelian/cdQA/branch/develop/graph/badge.svg?token=F16X0IU6RT)](https://codecov.io/gh/fmikaelian/cdQA)
-[![PyPI Downloads](https://img.shields.io/pypi/v/tensorflow.svg)](https://pypi.org/project/tensorflow/)
-[![PyPI Version](https://img.shields.io/pypi/dm/tensorflow.svg)](https://pypi.org/project/tensorflow/)
+[![Build Status](https://travis-ci.com/fmikaelian/cdQA.svg?token=Vzy9RRKRZ41ynd9q2BRX&branch=develop)](https://travis-ci.com/fmikaelian/cdQA)
+[![codecov](https://codecov.io/gh/fmikaelian/cdQA/branch/develop/graph/badge.svg?token=F16X0IU6RT)](https://codecov.io/gh/fmikaelian/cdQA)
+[![PyPI Version](https://img.shields.io/pypi/v/cdqa.svg)](https://pypi.org/project/cdqa/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/cdqa.svg)](https://pypi.org/project/cdqa/)
 [![Binder](https://mybinder.org/badge.svg)]()
 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com/licenses/mit/)
@@ -14,11 +15,11 @@ An end-to-end closed-domain question answering system with BERT and classic IR m
   - [From source](#from-source)
   - [Hardware Requirements](#hardware-requirements)
 - [Getting started](#getting-started)
+  - [How it works](#how-it-works)
   - [Preparing your data](#preparing-your-data)
   - [Training models](#training-models)
-  - [Using models](#using-models)
+  - [Making predictions](#making-predictions)
   - [Evaluating models](#evaluating-models)
-  - [Downloading pre-trained models](#downloading-pre-trained-models)
   - [Practical examples](#practical-examples)
 - [Deployment](#deployment)
   - [Manual](#manual)
@@ -54,116 +55,84 @@ python setup.py install --cuda_ext --cpp_ext
 
 ## Getting started
 
+### How it works
+
+<img src="docs/how-it-works.png" width="30%"/>
+
 ### Preparing your data
 
-To use `cdqa` on a custom corpus you need to convert this corpus into a `pandas.DataFrame` with the following columns:
+To use `cdqa` you need a `.csv` corpus file with the following columns:
 
 | date     | title             | category             | link                         | abstract             | paragraphs                                       | content                                       |
 | -------- | ----------------- | -------------------- | ---------------------------- | -------------------- | ------------------------------------------------ | --------------------------------------------- |
 | DD/MM/YY | The Article Title | The Article Category | https://the-article-link.com | The Article Abstract | [Paragraph 1 of Article, Paragraph N of Article] | Paragraph 1 of Article Paragraph N of Article |
 
+You can use the converters to create this file:
+
+```python
+# create a corpus dataframe from a directory containing .pdf files
+```
+
 ### Training models
 
-First we train the document retriever:
+Read your corpus in `.csv` format:
 
 ```python
 import pandas as pd
-from cdqa.retriever.tfidf_sklearn import TfidfRetriever
+from cdqa.pipeline.cdqa_sklearn import QAPipeline
 
-df = pd.read_csv('your-custom-corpus.csv')
-retriever = TfidfRetriever(metadata=df)
-retriever.fit(X=df['content'])
+df = pd.read_csv('your-custom-corpus-here.csv')
 ```
 
-Then the document reader:
+Fit the pipeline on your corpus using the pre-trained reader:
 
 ```python
-from cdqa.reader.bertqa_sklearn import BertProcessor, BertQA
-
-train_processor = BertProcessor(bert_model='bert-base-uncased', do_lower_case=True, is_training=True)
-train_examples, train_features = train_processor.fit_transform(X='data/train-v1.1.json')
-
-reader = BertQA(bert_model='bert-base-uncased',
-               train_batch_size=12,
-               learning_rate=3e-5,
-               num_train_epochs=2,
-               do_lower_case=True,
-               fp16=True,
-               output_dir='models/bert_qa_squad_v1.1_sklearn')
-
-reader.fit(X=(train_examples, train_features))
+cdqa_pipeline = QAPipeline(model='bert_qa_squad_v1.1_sklearn.joblib')
+cdqa_pipeline.fit(X=df)
 ```
 
-### Using models
-
-First the document retriever finds the most relevant documents given an input question:
+If you want to fine-tune the reader on your custom data:
 
 ```python
-question = 'Ask your question here'
-
-closest_docs_indices = retriever.predict(X=question)
+cdqa_pipeline = QAPipeline()
+cdqa_pipeline.fit(X=df, fit_reader=True)
 ```
 
-Then these documents are processed:
+### Making predictions
+
+To get the best prediction given an input query:
 
 ```python
-from cdqa.utils.converter import generate_squad_examples
+query = 'your custom question here'
 
-squad_examples = generate_squad_examples(question=question,
-                                         closest_docs_indices=closest_docs_indices,
-                                         metadata=df)
-
-test_processor = BertProcessor(bert_model='bert-base-uncased', do_lower_case=True, is_training=False)
-test_examples, test_features = test_processor.fit_transform(X=squad_examples)
-```
-
-Finally the document reader finds the best answer among the retrieved documents:
-
-```python
-final_prediction = model.predict(X=(test_examples, test_features))
-
-print(question, final_prediction)
+cdqa_pipeline.predict(X=query)
 ```
 
 ### Evaluating models
 
-In order to evaluate models on your custom dataset you will need to annotate it. The annotation process can be done in 4 steps:
+In order to evaluate models on your custom dataset you will need to annotate it. The annotation process can be done in 3 steps:
 
-1. Convert your pandas DataFrame into a json file with SQuAD format
+1. Convert your pandas DataFrame into a json file with SQuAD format:
 
     ```python
+    from cdqa.utils.converter import df2squad
+
+    json_data = df2squad(df=df, squad_version='v2.0', output_dir='../data', filename='bnpp_newsroom-v1.0')
     ```
 
-2. Use an annotator to add ground truth question-answer pairs
+2. Use an annotator to add ground truth question-answer pairs:
 
     Please refer to [`cdQA-annotator`](https://github.com/fmikaelian/cdQA-annotator), a web-based annotator for closed-domain question answering datasets with SQuAD format.
 
-3. Split your dataset into train and test sets
+3. Evaluate your model:
 
     ```python
+    from cdqa.utils.metrics import evaluate, evaluate_from_files
+
+    evaluate(dataset, predictions) # as json objects
+
+    evaluate_from_files(dataset_file='dev-v1.1.json', prediction_file='predictions.json') # as json files
     ```
-
-4. Evaluate your model
-
-    ```python
-    python evaluate-v1.1.py data/cdqa-v1.1.json logs/your_model/predictions.json
-    ```
-
-### Downloading pre-trained models
-
-To download existing data and models automatically from the Github releases, you will need a personal Github token. You can find [how to create one here](https://github.com/settings/tokens) (you only need to select the `repo` scope). Save your token as an environment variable:
-
-```shell
-export token='YOUR_GITHUB_TOKEN'
-```
-
-You can now execute the `download.py` to get all Github release assets:
-
-```shell
-python cdqa/utils/download.py
-```
-
-The data is saved in  `/data` and the models in `/models`. You can load the models with `joblib.load()`.
 
 ### Practical examples
 
@@ -182,7 +151,7 @@ FLASK_APP=api.py flask run -h 0.0.0.0
 To try it, execute:
 
 ```shell
-http localhost:5000/api q=='your question here'
+http localhost:5000/api query=='your question here'
 ```
 
 If you wish to serve a user interface, follow the instructions of [cdQA-ui](https://github.com/fmikaelian/cdQA-ui), a web interface developed for `cdQA`.

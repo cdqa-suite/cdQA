@@ -41,7 +41,7 @@ class QAPipeline(BaseEstimator):
 
     """
 
-    def __init__(self, metadata, model=None, bert_version='bert-base-uncased', **kwargs):
+    def __init__(self, model=None, **kwargs):
 
         # Separating kwargs
         kwargs_bertqa = {key: value for key, value in kwargs.items()
@@ -54,24 +54,19 @@ class QAPipeline(BaseEstimator):
                             if key in TfidfRetriever.__init__.__code__.co_varnames}
 
         if not model:
-            self.model = BertQA(self.bert_version, **kwargs_bertqa)
+            self.model = BertQA(**kwargs_bertqa)
         elif type(model) == str:
             self.model = joblib.load(model)
         else:
             self.model = model
 
-        self.metadata = metadata
-        self.bert_version = bert_version
-
-        self.processor_train = BertProcessor(self.bert_version,
-                                             is_training=True,
+        self.processor_train = BertProcessor(is_training=True,
                                              **kwargs_processor)
 
-        self.processor_predict = BertProcessor(self.bert_version,
-                                               is_training=False,
+        self.processor_predict = BertProcessor(is_training=False,
                                                **kwargs_processor)
 
-        self.retriever = TfidfRetriever(self.metadata, **kwargs_retriever)
+        self.retriever = TfidfRetriever(**kwargs_retriever)
 
     def fit(self, X=None, y=None, fit_reader=False):
         """ Fit the QAPipeline retriever to a list of documents in a dataframe if fit_reader is false,
@@ -85,6 +80,9 @@ class QAPipeline(BaseEstimator):
             Whether to fit reader (BertQA model) or retriever
 
         """
+        
+        self.metadata = X
+
         if not fit_reader:
             self.retriever.fit(self.metadata['content'])
         else:
@@ -101,7 +99,7 @@ class QAPipeline(BaseEstimator):
 
         """
 
-        closest_docs_indices = self.retriever.predict(X)
+        closest_docs_indices = self.retriever.predict(X, metadata=self.metadata)
         squad_examples = generate_squad_examples(question=X,
                                                  closest_docs_indices=closest_docs_indices,
                                                  metadata=self.metadata)

@@ -20,37 +20,41 @@ See more about this workflow at https://guides.github.com/introduction/flow/
 ## Repository Structure
 
 ```
+├── Dockerfile
 ├── LICENSE
 ├── README.md
+├── api.py --> the REST API of cdqa pipeline
 ├── cdqa
 │   ├── __init__.py
-│   ├── pipeline --> all steps as scripts to use the application
+│   ├── pipeline
 │   │   ├── __init__.py
-│   │   ├── download.py --> downloads all assets needed to use the application (data, models)
-│   │   ├── predict.py --> performs a prediction given a sample
-│   │   ├── processing.py --> processes raw data to a format usable for model training
-│   │   └── train.py --> trains a model given a input dataset already processed
+│   │   └── cdqa_sklearn.py --> a full cdqa pipeline sklearn wrapper based on run_squad.py's main() function
 │   ├── reader
 │   │   ├── __init__.py
-│   │   ├── bertqa_sklearn.py --> A BertForQuestionAnswering sklearn wrapper based on run_squad.py's main() function
+│   │   ├── bertqa_sklearn.py --> a BertForQuestionAnswering sklearn wrapper based on run_squad.py's main() function
 │   │   └── run_squad.py --> a miror of pytorch-pretrained-BERT example (used for pipeline steps)
 │   ├── retriever
 │   │   ├── __init__.py
-│   │   └── tfidf_doc_ranker.py --> the logic for the document retriever
+│   │   └── tfidf_sklearn.py --> the logic for the document retriever as a sklearn wrapper
 │   ├── scrapper
 │   │   ├── __init__.py
-│   │   └── bs4_scrapper.py --> the logic for the dataset scrapper
-│   └── utils --> utility functions used in the pipeline (to avoid flooding pipeline scripts)
+│   │   └── bs4_bnpp_newsroom.py --> the logic for the dataset scrapper
+│   └── utils
 │       ├── __init__.py
-│       └── converter.py --> the logic for converting the dataset to SQuAD format
-├── data --> the raw datasets
-├── examples --> examples to use different parts of the appplication
-│   ├── run_converter.py
-│   └── run_retriever.py
+│       ├── converter.py --> the logic for converting the dataset to SQuAD format
+│       └── download.py --> downloads all assets needed to use the application (data, models)
+│       ├── filters.py
+│       └── metrics.py
+├── data
+├── docs
+│   └── latex
+│       ├── cdqa.tex --> the research paper describing cdqa
+│       └── neurips_2019.sty --> the style file for the research paper from neurips
+├── examples
+│   ├── tutorial-predict-pipeline.ipynb --> examples to use cdqa for prediction
 ├── logs --> stores the outpout predictions and metrics
 ├── models --> stores the trained models
 ├── requirements.txt
-├── samples --> sample data for tests or examples
 ├── setup.py
 └── tests --> unit tests for the application
     ├── __init__.py

@@ -22,8 +22,6 @@ class TfidfRetriever(BaseEstimator):
         an iterable which yields either str, unicode or file objects
     top_n : int
         maximum number of top articles to retrieve
-    metadata : pandas.DataFrame
-        dataframe containing your corpus of documents metadata
         header should be of format: date, title, category, link, abstract, paragraphs, content.
     verbose : bool, optional
         If true, all of the warnings related to data processing will be printed.
@@ -50,12 +48,11 @@ class TfidfRetriever(BaseEstimator):
 
     >>> retriever = TfidfRetriever(ngram_range=(1, 2), max_df=0.85, stop_words='english')
     >>> retriever.fit(X=[paragraph['context'] for paragraph in paragraphs])
-    >>> closest_docs_indice
+    >>> closest_docs_indices = retriever.predict(X='Since when does the the Excellence Program of BNP Paribas exist?')
 
     """
 
     def __init__(self,
-                 metadata,
                  ngram_range=(1, 2),
                  max_df=0.85,
                  stop_words='english',
@@ -68,7 +65,6 @@ class TfidfRetriever(BaseEstimator):
         self.stop_words = stop_words
         self.paragraphs = paragraphs
         self.top_n = top_n
-        self.metadata = metadata
         self.verbose = verbose
 
     def fit(self, X, y=None):
@@ -80,7 +76,7 @@ class TfidfRetriever(BaseEstimator):
         
         return self
 
-    def predict(self, X):
+    def predict(self, X, metadata):
 
         t0 = time.time()
         question_vector = self.vectorizer.transform([X])
@@ -95,9 +91,9 @@ class TfidfRetriever(BaseEstimator):
                 index = closest_docs_indices[i]
                 if self.paragraphs:
                     article_index = self.paragraphs[int(index)]['index']
-                    title = self.metadata.iloc[int(article_index)]['title']
+                    title = metadata.iloc[int(article_index)]['title']
                 else:
-                    title = self.metadata.iloc[int(index)]['title']
+                    title = metadata.iloc[int(index)]['title']
                 table.add_row([rank, index, title])
                 rank+=1
             print(table)

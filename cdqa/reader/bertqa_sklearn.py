@@ -820,7 +820,7 @@ class BertProcessor(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self,
-                 bert_model,
+                 bert_model='bert-base-uncased',
                  do_lower_case=False,
                  is_training=False,
                  version_2_with_negative=False,
@@ -945,7 +945,7 @@ class BertQA(BaseEstimator):
 
 
     def __init__(self,
-                 bert_model,
+                 bert_model='bert-base-uncased',
                  custom_weights=False,
                  train_batch_size=32,
                  predict_batch_size=8,
