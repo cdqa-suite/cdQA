@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from sklearn.base import BaseEstimator, TransformerMixin
 """Run BERT on SQuAD."""
 
 from __future__ import absolute_import, division, print_function
@@ -575,13 +576,13 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
                         text="",
                         start_logit=null_start_logit,
                         end_logit=null_end_logit))
-                
+
             # In very rare edge cases we could only have single null prediction.
             # So we just create a nonce prediction in this case to avoid failure.
-            if len(nbest)==1:
+            if len(nbest) == 1:
                 nbest.insert(0,
-                    _NbestPrediction(text="empty", start_logit=0.0, end_logit=0.0))
-                
+                             _NbestPrediction(text="empty", start_logit=0.0, end_logit=0.0))
+
         # In very rare edge cases we could have no valid predictions. So we
         # just create a nonce prediction in this case to avoid failure.
         if not nbest:
@@ -610,7 +611,7 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
             nbest_json.append(output)
 
         assert len(nbest_json) >= 1
-        
+
         if not version_2_with_negative:
             all_predictions[example.qas_id] = nbest_json[0]["text"]
         else:
@@ -625,11 +626,12 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
                 all_nbest_json[example.qas_id] = nbest_json
 
         final_predictions[example.qas_id] = nbest_json[0]
-    
+
     final_predictions_sorted = collections.OrderedDict(sorted(final_predictions.items(),
-                                                              key=lambda item: item[1]['start_logit'] + item[1]['end_logit'],
+                                                              key=lambda item: item[1]['start_logit'] +
+                                                              item[1]['end_logit'],
                                                               reverse=True))
-    
+
     final_prediction = list(final_predictions_sorted.items())[0][1]['text']
 
     with open(output_prediction_file, "w") as writer:
@@ -775,12 +777,11 @@ def _compute_softmax(scores):
         probs.append(score / total_sum)
     return probs
 
-from sklearn.base import BaseEstimator, TransformerMixin
 
 class BertProcessor(BaseEstimator, TransformerMixin):
     """
     A scikit-learn transformer to convert SQuAD examples to BertQA input format.
-    
+
     Parameters
     ----------
     bert_model : str
@@ -842,12 +843,12 @@ class BertProcessor(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        
+
         tokenizer = BertTokenizer.from_pretrained(self.bert_model, do_lower_case=self.do_lower_case)
 
         examples = read_squad_examples(
             input_file=X, is_training=self.is_training, version_2_with_negative=self.version_2_with_negative)
-        
+
         features = convert_examples_to_features(
             examples=examples,
             tokenizer=tokenizer,
@@ -856,13 +857,14 @@ class BertProcessor(BaseEstimator, TransformerMixin):
             max_query_length=self.max_query_length,
             is_training=self.is_training,
             verbose=self.verbose)
-        
+
         return examples, features
+
 
 class BertQA(BaseEstimator):
     """
     A scikit-learn estimator for BertForQuestionAnswering.
-    
+
     Parameters
     ----------
     bert_model : str
@@ -880,7 +882,7 @@ class BertQA(BaseEstimator):
     num_train_epochs : float, optional
         Total number of training epochs to perform. (the default is 3.0)
     warmup_proportion : float, optional
-        Proportion of training to perform linear learning rate warmup for. E.g., 0.1 = 10%% 
+        Proportion of training to perform linear learning rate warmup for. E.g., 0.1 = 10%%
         of training. (the default is 0.1)
     n_best_size : int, optional
         The total number of n-best predictions to generate in the nbest_predictions.json
@@ -943,7 +945,6 @@ class BertQA(BaseEstimator):
 
     """
 
-
     def __init__(self,
                  bert_model='bert-base-uncased',
                  custom_weights=False,
@@ -999,7 +1000,8 @@ class BertQA(BaseEstimator):
             ptvsd.wait_for_attach()
 
         if self.local_rank == -1 or self.no_cuda:
-            self.device = torch.device("cuda" if torch.cuda.is_available() and not self.no_cuda else "cpu")
+            self.device = torch.device("cuda" if torch.cuda.is_available()
+                                       and not self.no_cuda else "cpu")
             self.n_gpu = torch.cuda.device_count()
         else:
             torch.cuda.set_device(self.local_rank)
@@ -1007,10 +1009,10 @@ class BertQA(BaseEstimator):
             self.n_gpu = 1
             # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
             torch.distributed.init_process_group(backend='nccl')
-        
-        logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                            datefmt = '%m/%d/%Y %H:%M:%S',
-                            level = logging.INFO if self.local_rank in [-1, 0] else logging.WARN)
+
+        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                            datefmt='%m/%d/%Y %H:%M:%S',
+                            level=logging.INFO if self.local_rank in [-1, 0] else logging.WARN)
 
         logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
             self.device, self.n_gpu, bool(self.local_rank != -1), self.fp16))
@@ -1021,7 +1023,7 @@ class BertQA(BaseEstimator):
 
         if self.gradient_accumulation_steps < 1:
             raise ValueError("Invalid gradient_accumulation_steps parameter: {}, should be >= 1".format(
-                                self.gradient_accumulation_steps))
+                self.gradient_accumulation_steps))
 
         self.train_batch_size = self.train_batch_size // self.gradient_accumulation_steps
 
@@ -1043,7 +1045,7 @@ class BertQA(BaseEstimator):
 
         # Prepare model
         model = BertForQuestionAnswering.from_pretrained(self.bert_model,
-                    cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(self.local_rank)))
+                                                         cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(self.local_rank)))
 
         if self.fp16:
             model.half()
@@ -1052,7 +1054,8 @@ class BertQA(BaseEstimator):
             try:
                 from apex.parallel import DistributedDataParallel as DDP
             except ImportError:
-                raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
+                raise ImportError(
+                    "Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
 
             model = DDP(model)
         elif self.n_gpu > 1:
@@ -1067,32 +1070,36 @@ class BertQA(BaseEstimator):
 
         no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
         optimizer_grouped_parameters = [
-            {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
-            {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
-            ]
+            {'params': [p for n, p in param_optimizer if not any(
+                nd in n for nd in no_decay)], 'weight_decay': 0.01},
+            {'params': [p for n, p in param_optimizer if any(
+                nd in n for nd in no_decay)], 'weight_decay': 0.0}
+        ]
 
         if self.fp16:
             try:
                 from apex.optimizers import FP16_Optimizer
                 from apex.optimizers import FusedAdam
             except ImportError:
-                raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
+                raise ImportError(
+                    "Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
 
             optimizer = FusedAdam(optimizer_grouped_parameters,
-                                lr=self.learning_rate,
-                                bias_correction=False,
-                                max_grad_norm=1.0)
+                                  lr=self.learning_rate,
+                                  bias_correction=False,
+                                  max_grad_norm=1.0)
             if self.loss_scale == 0:
                 optimizer = FP16_Optimizer(optimizer, dynamic_loss_scale=True, verbose=False)
             else:
-                optimizer = FP16_Optimizer(optimizer, static_loss_scale=self.loss_scale, verbose=False)
-            warmup_linear = WarmupLinearSchedule(warmup=args.warmup_proportion,
+                optimizer = FP16_Optimizer(
+                    optimizer, static_loss_scale=self.loss_scale, verbose=False)
+            warmup_linear = WarmupLinearSchedule(warmup=self.warmup_proportion,
                                                  t_total=num_train_optimization_steps)
         else:
             optimizer = BertAdam(optimizer_grouped_parameters,
-                                lr=self.learning_rate,
-                                warmup=self.warmup_proportion,
-                                t_total=num_train_optimization_steps)
+                                 lr=self.learning_rate,
+                                 warmup=self.warmup_proportion,
+                                 t_total=num_train_optimization_steps)
 
         global_step = 0
 
@@ -1104,25 +1111,28 @@ class BertQA(BaseEstimator):
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
-        all_start_positions = torch.tensor([f.start_position for f in train_features], dtype=torch.long)
+        all_start_positions = torch.tensor(
+            [f.start_position for f in train_features], dtype=torch.long)
         all_end_positions = torch.tensor([f.end_position for f in train_features], dtype=torch.long)
         train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
-                                    all_start_positions, all_end_positions)
+                                   all_start_positions, all_end_positions)
         if self.local_rank == -1:
             train_sampler = RandomSampler(train_data)
         else:
             train_sampler = DistributedSampler(train_data)
-        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=self.train_batch_size)
+        train_dataloader = DataLoader(train_data, sampler=train_sampler,
+                                      batch_size=self.train_batch_size)
 
         model.train()
         for _ in trange(int(self.num_train_epochs), desc="Epoch"):
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration", disable=self.local_rank not in [-1, 0])):
                 if self.n_gpu == 1:
-                    batch = tuple(t.to(self.device) for t in batch) # multi-gpu does scattering it-self
+                    batch = tuple(t.to(self.device)
+                                  for t in batch)  # multi-gpu does scattering it-self
                 input_ids, input_mask, segment_ids, start_positions, end_positions = batch
                 loss = model(input_ids, segment_ids, input_mask, start_positions, end_positions)
                 if self.n_gpu > 1:
-                    loss = loss.mean() # mean() to average on multi-gpu.
+                    loss = loss.mean()  # mean() to average on multi-gpu.
                 if self.gradient_accumulation_steps > 1:
                     loss = loss / self.gradient_accumulation_steps
 
@@ -1134,8 +1144,8 @@ class BertQA(BaseEstimator):
                     if self.fp16:
                         # modify learning rate with special warm up BERT uses
                         # if self.fp16 is False, BertAdam is used and handles this automatically
-                        lr_this_step = args.learning_rate * warmup_linear.get_lr(global_step/num_train_optimization_steps,
-                                                                                 args.warmup_proportion)
+                        lr_this_step = self.learning_rate * warmup_linear.get_lr(global_step/num_train_optimization_steps,
+                                                                                 self.warmup_proportion)
                         for param_group in optimizer.param_groups:
                             param_group['lr'] = lr_this_step
                     optimizer.step()
@@ -1143,7 +1153,8 @@ class BertQA(BaseEstimator):
                     global_step += 1
 
         # Save a trained model, configuration and tokenizer
-        model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
+        model_to_save = model.module if hasattr(
+            model, 'module') else model  # Only save the model it-self
 
         # If we save using the predefined names, we can load using `from_pretrained`
         output_model_file = os.path.join(self.output_dir, WEIGHTS_NAME)
@@ -1158,7 +1169,8 @@ class BertQA(BaseEstimator):
         else:
             # Load a trained model and vocabulary that you have fine-tuned
             model = BertForQuestionAnswering.from_pretrained(self.output_dir)
-            tokenizer = BertTokenizer.from_pretrained(self.output_dir, do_lower_case=self.do_lower_case)
+            tokenizer = BertTokenizer.from_pretrained(
+                self.output_dir, do_lower_case=self.do_lower_case)
 
         model.to(self.device)
         self.model = model
@@ -1181,7 +1193,8 @@ class BertQA(BaseEstimator):
         eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
-        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=self.predict_batch_size)
+        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler,
+                                     batch_size=self.predict_batch_size)
 
         self.model.eval()
         all_results = []
@@ -1193,7 +1206,8 @@ class BertQA(BaseEstimator):
             input_mask = input_mask.to(self.device)
             segment_ids = segment_ids.to(self.device)
             with torch.no_grad():
-                batch_start_logits, batch_end_logits = self.model(input_ids, segment_ids, input_mask)
+                batch_start_logits, batch_end_logits = self.model(
+                    input_ids, segment_ids, input_mask)
             for i, example_index in enumerate(example_indices):
                 start_logits = batch_start_logits[i].detach().cpu().tolist()
                 end_logits = batch_end_logits[i].detach().cpu().tolist()
