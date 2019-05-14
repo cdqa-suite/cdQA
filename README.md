@@ -117,7 +117,7 @@ In order to evaluate models on your custom dataset you will need to annotate it.
     ```python
     from cdqa.utils.converter import df2squad
 
-    json_data = df2squad(df=df, squad_version='v2.0', output_dir='../data', filename='bnpp_newsroom-v1.0')
+    json_data = df2squad(df=df, squad_version='v2.0', output_dir='../data', filename='bnpp_newsroom-v1.1')
     ```
 
 2. Use an annotator to add ground truth question-answer pairs:

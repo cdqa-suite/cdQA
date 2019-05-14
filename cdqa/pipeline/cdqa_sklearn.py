@@ -6,7 +6,8 @@ import numpy as np
 from sklearn.base import BaseEstimator
 
 from cdqa.retriever.tfidf_sklearn import TfidfRetriever
-from cdqa.utils.converter import filter_paragraphs, generate_squad_examples
+from cdqa.utils.filters import filter_paragraphs
+from cdqa.utils.converters import generate_squad_examples
 from cdqa.reader.bertqa_sklearn import BertProcessor, BertQA
 
 

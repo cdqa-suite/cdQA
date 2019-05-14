@@ -53,7 +53,7 @@ def download_releases_assets():
                     handle.write(block)
 
     # download datasets
-    release = repo.get_release('bnpp_newsroom_v1.0')
+    release = repo.get_release('bnpp_newsroom_v1.1')
     assets = release.get_assets()
 
     for asset in assets:

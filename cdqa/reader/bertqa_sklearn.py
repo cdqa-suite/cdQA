@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from sklearn.base import BaseEstimator, TransformerMixin
+
 """Run BERT on SQuAD."""
 
 from __future__ import absolute_import, division, print_function
@@ -41,6 +41,8 @@ from pytorch_pretrained_bert.optimization import BertAdam, WarmupLinearSchedule
 from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
                                                   BertTokenizer,
                                                   whitespace_tokenize)
+
+from sklearn.base import BaseEstimator, TransformerMixin
 
 if sys.version_info[0] == 2:
     import cPickle as pickle
@@ -1139,8 +1141,7 @@ class BertQA(BaseEstimator):
                     if self.fp16:
                         # modify learning rate with special warm up BERT uses
                         # if self.fp16 is False, BertAdam is used and handles this automatically
-                        lr_this_step = self.learning_rate * warmup_linear.get_lr(global_step/num_train_optimization_steps,
-                                                                                 self.warmup_proportion)
+                        lr_this_step = self.learning_rate * warmup_linear.get_lr(global_step, self.warmup_proportion)
                         for param_group in optimizer.param_groups:
                             param_group['lr'] = lr_this_step
                     optimizer.step()

@@ -6,6 +6,7 @@ from lxml import html
 import re
 import os
 import numpy as np
+from cdqa.utils.converters import df2squad
 
 def fetch_bnpp_newsroom(output_dir=None):
     """
@@ -92,6 +93,7 @@ def fetch_bnpp_newsroom(output_dir=None):
     df['paragraphs'] = paragraphs
     
     if output_dir:
-        df.to_csv(os.path.join(output_dir, 'bnpp_newsroom-v1.0.csv'), index=False)
+        df.to_csv(os.path.join(output_dir, 'bnpp_newsroom-v1.1.csv'), index=False)
+        df2squad(df=df, squad_version='v1.1', output_dir=output_dir, filename='bnpp_newsroom-v1.1')
 
     return df
