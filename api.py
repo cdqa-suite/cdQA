@@ -15,15 +15,17 @@ df = pd.read_csv('data/bnpp_newsroom_v1.1/bnpp_newsroom-v1.1.csv', converters={'
 df['paragraphs'] = df['paragraphs'].apply(filter_paragraphs)
 df['content'] = df['paragraphs'].apply(lambda x: ' '.join(x))
 
-qa_pipe = QAPipeline(model='models/bert_qa_squad_v1.1_sklearn/bert_qa_squad_v1.1_sklearn.joblib')
-qa_pipe.fit(X=df)
-qa_pipe.model.output_dir = 'logs/'
+cdqa_pipeline = QAPipeline(reader='models/bert_qa_squad_v1.1_sklearn/bert_qa_squad_v1.1_sklearn.joblib')
+cdqa_pipeline.fit(X=df)
+cdqa_pipeline.reader.output_dir = 'logs/'
 
 @app.route('/api', methods=['GET'])
 def api():
     
     query = request.args.get('query')
-    prediction = qa_pipe.predict(X=query)
+    prediction = cdqa_pipeline.predict(X=query)
 
     return jsonify(query=query,
-                   prediction=prediction)
+                   answer=prediction[0],
+                   title=prediction[1],
+                   paragraph=prediction[2])
