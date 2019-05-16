@@ -65,7 +65,9 @@ class SquadExample(object):
                  orig_answer_text=None,
                  start_position=None,
                  end_position=None,
-                 is_impossible=None):
+                 is_impossible=None,
+                 paragraph=None,
+                 title=None):
         self.qas_id = qas_id
         self.question_text = question_text
         self.doc_tokens = doc_tokens
@@ -73,6 +75,8 @@ class SquadExample(object):
         self.start_position = start_position
         self.end_position = end_position
         self.is_impossible = is_impossible
+        self.paragraph = paragraph
+        self.title = title
 
     def __str__(self):
         return self.__repr__()
@@ -199,7 +203,9 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                     orig_answer_text=orig_answer_text,
                     start_position=start_position,
                     end_position=end_position,
-                    is_impossible=is_impossible)
+                    is_impossible=is_impossible,
+                    paragraph=paragraph_text,
+                    title=entry["title"])
                 examples.append(example)
     return examples
 
@@ -633,8 +639,12 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
                                                               key=lambda item: item[1]['start_logit'] +
                                                               item[1]['end_logit'],
                                                               reverse=True))
+    
+    question_id = list(final_predictions_sorted.items())[0][0]
+    title = [e for e in all_examples if e.qas_id == question_id][0].title
+    paragraph = [e for e in all_examples if e.qas_id == question_id][0].paragraph
 
-    final_prediction = list(final_predictions_sorted.items())[0][1]['text']
+    final_prediction = list(final_predictions_sorted.items())[0][1]['text'], title, paragraph
 
     with open(output_prediction_file, "w") as writer:
         writer.write(json.dumps(all_predictions, indent=4) + "\n")
