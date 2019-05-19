@@ -6,7 +6,6 @@ import numpy as np
 from sklearn.base import BaseEstimator
 
 from cdqa.retriever.tfidf_sklearn import TfidfRetriever
-from cdqa.utils.filters import filter_paragraphs
 from cdqa.utils.converters import generate_squad_examples
 from cdqa.reader.bertqa_sklearn import BertProcessor, BertQA
 
@@ -105,16 +104,40 @@ class QAPipeline(BaseEstimator):
 
         Parameters
         ----------
-        X = str
-            Sample (question) to perform a prediction on
+        X: str or list of strings
+            Sample (question) or list of samples to perform a prediction on
+
+        Returns
+        -------
+        If X is str
+        prediction: tuple (answer, title, paragraph)
+
+        If X is list os strings
+        predictions: list of tuples (answer, title, paragraph)
 
         """
+        if(isinstance(X, str)):
+            closest_docs_indices = self.retriever.predict(X, metadata=self.metadata)
+            squad_examples = generate_squad_examples(question=X,
+                                                     closest_docs_indices=closest_docs_indices,
+                                                     metadata=self.metadata)
+            examples, features = self.processor_predict.fit_transform(X=squad_examples)
+            prediction = self.reader.predict((examples, features))
+            return prediction
 
-        closest_docs_indices = self.retriever.predict(X, metadata=self.metadata)
-        squad_examples = generate_squad_examples(question=X,
-                                                 closest_docs_indices=closest_docs_indices,
-                                                 metadata=self.metadata)
-        examples, features = self.processor_predict.fit_transform(X=squad_examples)
-        prediction = self.reader.predict((examples, features))
+        elif(isinstance(X,list)):
+            predictions = []
+            for query in X:
+                closest_docs_indices = self.retriever.predict(query, metadata=self.metadata)
+                squad_examples = generate_squad_examples(question=query,
+                                                         closest_docs_indices=closest_docs_indices,
+                                                         metadata=self.metadata)
+                examples, features = self.processor_predict.fit_transform(X=squad_examples)
+                pred = self.reader.predict((examples, features))
+                predictions.append(pred)
+            
+            return predictions
 
-        return prediction
+        else:
+            raise TypeError("The input is not a string or a list. \
+                            Please provide a string or a list of strings as input")

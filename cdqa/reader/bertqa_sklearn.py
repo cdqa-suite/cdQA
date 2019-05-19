@@ -1192,6 +1192,7 @@ class BertQA(BaseEstimator):
         eval_dataloader = DataLoader(eval_data, sampler=eval_sampler,
                                      batch_size=self.predict_batch_size)
 
+        self.model.to(self.device)
         self.model.eval()
         all_results = []
         logger.info("Start evaluating")
