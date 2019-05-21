@@ -1,28 +1,53 @@
-def filter_paragraphs(paragraphs, min_length=10, max_length=250):
+import os
+import pandas as pd
+import numpy as np
+
+
+
+def filter_paragraphs(articles, drop_empty=True, read_threshold=1000, public_data=True, min_length=50, max_length=300):
     """
-    Filters out paragraphs shorter than X words and longer than Y words
+    Cleans the paragraphs and filters them regarding their length
 
     Parameters
     ----------
-    paragraphs : [type]
-        [description]
+    articles : DataFrame of all the articles 
+
 
     Returns
     -------
-    [type]
-        [description]
+    Cleaned and filtered dataframe
 
     Examples
     --------
-    >>> from ast import literal_eval
     >>> import pandas as pd
     >>> from cdqa.utils.filters import filter_paragraphs
 
-    >>> df = pd.read_csv('../data/bnpp_newsroom_v1.1/bnpp_newsroom-v1.1.csv', converters={'paragraphs': literal_eval})
-    >>> df['paragraphs'] = df['paragraphs'].apply(filter_paragraphs)
-
+    >>> df = pd.read_csv('data.csv')
+    >>> df_cleaned = filter_paragraphs(df)
     """
 
-    paragraphs_filtered = [paragraph for paragraph in paragraphs if len(
-        paragraph.split()) >= min_length and len(paragraph.split()) <= max_length]
-    return paragraphs_filtered
+    # Replace and split
+    def replace_and_split(paragraphs):
+        paragraph_cleaned = paragraphs.replace("\'s", ' ''s').replace("\\n", '').split("\'")
+        return paragraph_cleaned
+
+    # Select paragraphs with the required size
+    def filter_on_size(paragraphs, min_length=min_length, max_length=max_length):
+        paragraph_filtered = [paragraph.strip() for paragraph in paragraphs if len(paragraph.split()) >= min_length
+                                                                           and len(paragraph.split()) <= max_length]
+        return paragraph_filtered
+
+    # Cleaning and filtering
+    articles['paragraphs'] = articles['paragraphs'].apply(replace_and_split)
+    articles['paragraphs'] = articles['paragraphs'].apply(filter_on_size)
+    articles['paragraphs'] = articles['paragraphs'].apply(lambda x: x if len(x) > 0 else np.nan)
+
+    # Read threshold for private dataset
+    if not public_data:
+        articles = articles.loc[articles['number_of_read'] >= read_threshold]
+
+    # Drop empty articles
+    if drop_empty:
+        articles = articles.dropna(subset=['paragraphs']).reset_index(drop=True)
+
+    return articles
