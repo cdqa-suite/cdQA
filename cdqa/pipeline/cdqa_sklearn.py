@@ -141,3 +141,30 @@ class QAPipeline(BaseEstimator):
         else:
             raise TypeError("The input is not a string or a list. \
                             Please provide a string or a list of strings as input")
+
+    def to(self, device):
+        ''' Send reader to CPU if device=='cpu' or to GPU if device=='cuda'
+        '''
+        if device not in ('cpu', 'cuda'):
+            raise ValueError("Attribure device should be 'cpu' or 'cuda'.")
+        
+        self.reader.model.to(device)
+        return self
+
+    def cpu(self):
+        ''' Send reader to CPU
+        '''
+        self.reader.model.cpu()
+        return self
+    
+    def cuda(self):
+        def cpu(self):
+        ''' Send reader to GPU
+        '''
+        self.reader.model.cuda()
+        return self
+
+
+
+
+
