@@ -28,8 +28,9 @@ def filter_paragraphs(articles, drop_empty=True, read_threshold=1000, public_dat
 
     # Replace and split
     def replace_and_split(paragraphs):
-        paragraph_cleaned = paragraphs.replace("\'s", ' ''s').replace("\\n", '').split("\'")
-        return paragraph_cleaned
+        for paragraph in paragraphs:
+            paragraph.replace("\'s", ' ''s').replace("\\n", '').split("\'")
+        return paragraphs
 
     # Select paragraphs with the required size
     def filter_on_size(paragraphs, min_length=min_length, max_length=max_length):
