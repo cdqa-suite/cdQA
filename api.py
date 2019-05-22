@@ -12,7 +12,7 @@ app = Flask(__name__)
 CORS(app)
 
 df = pd.read_csv('data/bnpp_newsroom_v1.1/bnpp_newsroom-v1.1.csv', converters={'paragraphs': literal_eval})
-df['paragraphs'] = df['paragraphs'].apply(filter_paragraphs)
+df = filter_paragraphs(df)
 df['content'] = df['paragraphs'].apply(lambda x: ' '.join(x))
 
 cdqa_pipeline = QAPipeline(reader='models/bert_qa_squad_v1.1_sklearn/bert_qa_squad_v1.1_sklearn.joblib')
