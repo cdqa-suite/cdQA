@@ -2,6 +2,7 @@ import joblib
 
 import pandas as pd
 import numpy as np
+import torch
 
 from sklearn.base import BaseEstimator
 
@@ -79,9 +80,9 @@ class QAPipeline(BaseEstimator):
             Dataframe with the following columns: "title", "paragraphs" and "content"
 
         """
-        
+
         self.metadata = X
-        self.retriever.fit(self.metadata['content'])        
+        self.retriever.fit(self.metadata['content'])
 
         return self
 
@@ -125,7 +126,7 @@ class QAPipeline(BaseEstimator):
             prediction = self.reader.predict((examples, features))
             return prediction
 
-        elif(isinstance(X,list)):
+        elif(isinstance(X, list)):
             predictions = []
             for query in X:
                 closest_docs_indices = self.retriever.predict(query, metadata=self.metadata)
@@ -135,7 +136,7 @@ class QAPipeline(BaseEstimator):
                 examples, features = self.processor_predict.fit_transform(X=squad_examples)
                 pred = self.reader.predict((examples, features))
                 predictions.append(pred)
-            
+
             return predictions
 
         else:
@@ -147,24 +148,21 @@ class QAPipeline(BaseEstimator):
         '''
         if device not in ('cpu', 'cuda'):
             raise ValueError("Attribure device should be 'cpu' or 'cuda'.")
-        
+
         self.reader.model.to(device)
+        self.reader.device = torch.device(device)
         return self
 
     def cpu(self):
         ''' Send reader to CPU
         '''
         self.reader.model.cpu()
+        self.reader.device = torch.device('cpu')
         return self
-    
+
     def cuda(self):
-        def cpu(self):
         ''' Send reader to GPU
         '''
         self.reader.model.cuda()
+        self.reader.device = torch.device('cuda')
         return self
-
-
-
-
-
