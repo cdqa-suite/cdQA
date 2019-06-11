@@ -639,7 +639,7 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
                                                               key=lambda item: item[1]['start_logit'] +
                                                               item[1]['end_logit'],
                                                               reverse=True))
-    
+
     question_id = list(final_predictions_sorted.items())[0][0]
     title = [e for e in all_examples if e.qas_id == question_id][0].title
     paragraph = [e for e in all_examples if e.qas_id == question_id][0].paragraph
@@ -1022,12 +1022,13 @@ class BertQA(BaseEstimator):
             # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
             torch.distributed.init_process_group(backend='nccl')
 
-        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                            datefmt='%m/%d/%Y %H:%M:%S',
-                            level=logging.INFO if self.local_rank in [-1, 0] else logging.WARN)
+        if self.verbose_logging:
+            logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                                datefmt='%m/%d/%Y %H:%M:%S',
+                                level=logging.INFO if self.local_rank in [-1, 0] else logging.WARN)
 
-        logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
-            self.device, self.n_gpu, bool(self.local_rank != -1), self.fp16))
+            logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
+                self.device, self.n_gpu, bool(self.local_rank != -1), self.fp16))
 
     def fit(self, X, y=None):
 
@@ -1109,11 +1110,12 @@ class BertQA(BaseEstimator):
 
         global_step = 0
 
-        logger.info("***** Running training *****")
-        logger.info("  Num orig examples = %d", len(train_examples))
-        logger.info("  Num split examples = %d", len(train_features))
-        logger.info("  Batch size = %d", self.train_batch_size)
-        logger.info("  Num steps = %d", num_train_optimization_steps)
+        if self.verbose_logging:
+            logger.info("***** Running training *****")
+            logger.info("  Num orig examples = %d", len(train_examples))
+            logger.info("  Num split examples = %d", len(train_features))
+            logger.info("  Batch size = %d", self.train_batch_size)
+            logger.info("  Num steps = %d", num_train_optimization_steps)
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
@@ -1176,11 +1178,11 @@ class BertQA(BaseEstimator):
     def predict(self, X):
 
         eval_examples, eval_features = X
-
-        logger.info("***** Running predictions *****")
-        logger.info("  Num orig examples = %d", len(eval_examples))
-        logger.info("  Num split examples = %d", len(eval_features))
-        logger.info("  Batch size = %d", self.predict_batch_size)
+        if self.verbose_logging:
+            logger.info("***** Running predictions *****")
+            logger.info("  Num orig examples = %d", len(eval_examples))
+            logger.info("  Num split examples = %d", len(eval_features))
+            logger.info("  Batch size = %d", self.predict_batch_size)
 
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
@@ -1195,9 +1197,10 @@ class BertQA(BaseEstimator):
         self.model.to(self.device)
         self.model.eval()
         all_results = []
-        logger.info("Start evaluating")
+        if self.verbose_logging:
+            logger.info("Start evaluating")
         for input_ids, input_mask, segment_ids, example_indices in eval_dataloader:
-            if len(all_results) % 1000 == 0:
+            if len(all_results) % 1000 == 0 and self.verbose_logging:
                 logger.info("Processing example: %d" % (len(all_results)))
             input_ids = input_ids.to(self.device)
             input_mask = input_mask.to(self.device)

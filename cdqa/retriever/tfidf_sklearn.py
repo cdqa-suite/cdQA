@@ -58,7 +58,7 @@ class TfidfRetriever(BaseEstimator):
                  stop_words='english',
                  paragraphs=None,
                  top_n=3,
-                 verbose=True):
+                 verbose=False):
 
         self.ngram_range = ngram_range
         self.max_df = max_df
@@ -73,7 +73,7 @@ class TfidfRetriever(BaseEstimator):
                                           max_df=self.max_df,
                                           stop_words=self.stop_words)
         self.tfidf_matrix = self.vectorizer.fit_transform(X)
-        
+
         return self
 
     def predict(self, X, metadata):
@@ -82,7 +82,7 @@ class TfidfRetriever(BaseEstimator):
         question_vector = self.vectorizer.transform([X])
         scores = pd.DataFrame(self.tfidf_matrix.dot(question_vector.T).toarray())
         closest_docs_indices = scores.sort_values(by=0, ascending=False).index[:self.top_n].values
-        
+
         # inspired from https://github.com/facebookresearch/DrQA/blob/50d0e49bb77fe0c6e881efb4b6fe2e61d3f92509/scripts/reader/interactive.py#L63
         if self.verbose:
             rank = 1
