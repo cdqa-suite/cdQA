@@ -1,15 +1,41 @@
 # Contributing
 
-- [Contributions](#contributions)
-- [Repository Structure](#repository-structure)
+Thank you for considering contributing to cdQA 🙏
 
-## Contributions
+Following these guidelines helps to communicate that you respect the time of the developers managing and developing this open source project. In return, they should reciprocate that respect in addressing your issue, assessing changes, and helping you finalize your pull requests.
 
-To contribute to this repository, you will need to follow the git branch workflow:
+## Table of Contents <!-- omit in toc -->
+- [Code of Conduct](#code-of-conduct)
+- [How Can I Contribute?](#how-can-i-contribute)
+- [Your First Contribution](#your-first-contribution)
+  - [Unsure where to begin contributing to cdQA?](#unsure-where-to-begin-contributing-to-cdqa)
+  - [Working on your first Pull Request?](#working-on-your-first-pull-request)
+  - [Having trouble understanding the repository structure?](#having-trouble-understanding-the-repository-structure)
+
+## Code of Conduct
+
+This project and everyone participating in it is governed by the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/). By participating, you are expected to uphold this code.
+
+## How Can I Contribute?
+
+cdQA is an open source project and we love to receive contributions from our community! There are many ways to contribute: improving the documentation, reporting bugs, suggesting or proposing new features, sharing your results...
+
+## Your First Contribution
+
+### Unsure where to begin contributing to cdQA?
+
+You can start by looking through these beginner and help-wanted issues:
+
+- Beginner issues - issues which should only require a few lines of code, and a test or two.
+- Help wanted issues - issues which should be a bit more involved than beginner issues.
+
+### Working on your first Pull Request?
+
+Here are some example steps to get it done:
 
 - Create a feature branch from `develop` branch with the name of the issue you want to fix.
 - Commit in this new feature branch until your fix is done while referencing the issue number in your commit message.
-- Open a pull request in order to merge you branch with the `develop` branch
+- Open a pull request in order to merge you branch with the `develop` branch.
 - Discuss with peers and update your code until pull request is accepted by repository admins.
 - Delete you feature branch.
 - Synchonise your repository with the latest `develop` changes.
@@ -17,9 +43,9 @@ To contribute to this repository, you will need to follow the git branch workflo
 
 See more about this workflow at https://guides.github.com/introduction/flow/
 
-## Repository Structure
+### Having trouble understanding the repository structure?
 
-```
+```shell
 ├── Dockerfile
 ├── LICENSE
 ├── README.md

@@ -1,4 +1,4 @@
-# cdQA <img src="https://cdn.discordapp.com/emojis/513893717816508416.gif" width="40" height="40"/>
+# cdQA (Closed Domain Question Answering)
 
 [![Build Status](https://travis-ci.com/fmikaelian/cdQA.svg?token=Vzy9RRKRZ41ynd9q2BRX&branch=develop)](https://travis-ci.com/fmikaelian/cdQA)
 [![codecov](https://codecov.io/gh/fmikaelian/cdQA/branch/develop/graph/badge.svg?token=F16X0IU6RT)](https://codecov.io/gh/fmikaelian/cdQA)
@@ -6,6 +6,8 @@
 [![PyPI Downloads](https://img.shields.io/pypi/dm/cdqa.svg)](https://pypi.org/project/cdqa/)
 [![Binder](https://mybinder.org/badge.svg)]()
 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)]()
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](.github/CODE_OF_CONDUCT.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com) 
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com/licenses/mit/)
 
 An end-to-end closed-domain question answering system with BERT and classic IR methods 📚
@@ -45,13 +47,7 @@ pip install -e .
 
 ### Hardware Requirements
 
-Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI (Ubuntu) Version 22.0 + a single Tesla V100 16GB with 16-bits training enabled (to accelerate training and prediction). To enable this feature, you will need to install [`apex`](https://github.com/nvidia/apex):
-
-```shell
-git clone https://github.com/NVIDIA/apex.git
-cd apex/
-python setup.py install --cuda_ext --cpp_ext
-```
+Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI (Ubuntu) Version 22.0 + a single Tesla V100 16GB.
 
 ## Getting started
 
@@ -136,7 +132,8 @@ In order to evaluate models on your custom dataset you will need to annotate it.
 
 ### Practical examples
 
-A complete worfklow is described in our [`examples`](examples) notebook.
+- [First steps with cdQA (notebook)](examples/tutorial-predict-pipeline.ipynb).
+- [Training the reader on SQuAD (script)](examples/tutorial-train-reader-squad.py)
 
 ## Deployment
 
