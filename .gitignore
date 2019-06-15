@@ -114,3 +114,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# cdQA
+logs/
+models/
+data/

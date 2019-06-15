@@ -456,8 +456,9 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
                       output_nbest_file, output_null_log_odds_file, verbose_logging,
                       version_2_with_negative, null_score_diff_threshold):
     """Write final predictions to the json file and log-odds of null if needed."""
-    logger.info("Writing predictions to: %s" % (output_prediction_file))
-    logger.info("Writing nbest to: %s" % (output_nbest_file))
+    if verbose_logging:
+        logger.info("Writing predictions to: %s" % (output_prediction_file))
+        logger.info("Writing nbest to: %s" % (output_nbest_file))
 
     example_index_to_features = collections.defaultdict(list)
     for feature in all_features:
@@ -646,13 +647,14 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
 
     final_prediction = list(final_predictions_sorted.items())[0][1]['text'], title, paragraph
 
-    with open(output_prediction_file, "w") as writer:
-        writer.write(json.dumps(all_predictions, indent=4) + "\n")
+    if output_prediction_file:
+        with open(output_prediction_file, "w") as writer:
+            writer.write(json.dumps(all_predictions, indent=4) + "\n")
+    if output_nbest_file:
+        with open(output_nbest_file, "w") as writer:
+            writer.write(json.dumps(all_nbest_json, indent=4) + "\n")
 
-    with open(output_nbest_file, "w") as writer:
-        writer.write(json.dumps(all_nbest_json, indent=4) + "\n")
-
-    if version_2_with_negative:
+    if version_2_with_negative and output_null_log_odds_file:
         with open(output_null_log_odds_file, "w") as writer:
             writer.write(json.dumps(scores_diff_json, indent=4) + "\n")
 
@@ -924,7 +926,8 @@ class BertQA(BaseEstimator):
     null_score_diff_threshold : float, optional
         If null_score - best_non_null is greater than the threshold predict null. (the default is 0.0)
     output_dir : str, optional
-        The output directory where the model checkpoints and predictions will be written. (the default is '.')
+        The output directory where the model checkpoints and predictions will be written.
+        If None, nothing is saved. (the default is None)
     server_ip : str, optional
         Can be used for distant debugging. (the default is '')
     server_port : str, optional
@@ -974,7 +977,7 @@ class BertQA(BaseEstimator):
                  loss_scale=0,
                  version_2_with_negative=False,
                  null_score_diff_threshold=0.0,
-                 output_dir='.',
+                 output_dir=None,
                  server_ip='',
                  server_port=''):
 
@@ -1046,7 +1049,7 @@ class BertQA(BaseEstimator):
         if self.n_gpu > 0:
             torch.cuda.manual_seed_all(self.seed)
 
-        if not os.path.exists(self.output_dir):
+        if self.output_dir and not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
         num_train_optimization_steps = int(
@@ -1165,11 +1168,12 @@ class BertQA(BaseEstimator):
             self.model, 'module') else self.model  # Only save the model it-self
 
         # If we save using the predefined names, we can load using `from_pretrained`
-        output_model_file = os.path.join(self.output_dir, WEIGHTS_NAME)
-        output_config_file = os.path.join(self.output_dir, CONFIG_NAME)
+        if self.output_dir:
+            output_model_file = os.path.join(self.output_dir, WEIGHTS_NAME)
+            output_config_file = os.path.join(self.output_dir, CONFIG_NAME)
 
-        torch.save(model_to_save.state_dict(), output_model_file)
-        model_to_save.config.to_json_file(output_config_file)
+            torch.save(model_to_save.state_dict(), output_model_file)
+            model_to_save.config.to_json_file(output_config_file)
 
         self.model.to(self.device)
 
@@ -1216,9 +1220,14 @@ class BertQA(BaseEstimator):
                 all_results.append(RawResult(unique_id=unique_id,
                                              start_logits=start_logits,
                                              end_logits=end_logits))
-        output_prediction_file = os.path.join(self.output_dir, "predictions.json")
-        output_nbest_file = os.path.join(self.output_dir, "nbest_predictions.json")
-        output_null_log_odds_file = os.path.join(self.output_dir, "null_odds.json")
+        if self.output_dir:
+            output_prediction_file = os.path.join(self.output_dir, "predictions.json")
+            output_nbest_file = os.path.join(self.output_dir, "nbest_predictions.json")
+            output_null_log_odds_file = os.path.join(self.output_dir, "null_odds.json")
+        else:
+            output_prediction_file = None
+            output_nbest_file = None
+            output_null_log_odds_file = None
         final_prediction, all_predictions, all_nbest_json, scores_diff_json = write_predictions(
             eval_examples,
             eval_features,
