@@ -7,7 +7,7 @@
 [![Binder](https://mybinder.org/badge.svg)]()
 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)]()
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](.github/CODE_OF_CONDUCT.md)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com) 
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com/licenses/mit/)
 
 An end-to-end closed-domain question answering system with BERT and classic IR methods 📚
@@ -87,11 +87,11 @@ cdqa_pipeline = QAPipeline(model='bert_qa_squad_v1.1_sklearn.joblib')
 cdqa_pipeline.fit(X=df)
 ```
 
-If you want to fine-tune the reader on your custom data:
+If you want to fine-tune the reader on your custom data (it must be a json file in SQuAD format with annotated questions and answers):
 
 ```python
 cdqa_pipeline = QAPipeline()
-cdqa_pipeline.fit(X=df, fit_reader=True)
+cdqa_pipeline.fit_reader('path-to-data.json')
 ```
 
 ### Making predictions
@@ -120,7 +120,7 @@ In order to evaluate models on your custom dataset you will need to annotate it.
 
     Please refer to [`cdQA-annotator`](https://github.com/fmikaelian/cdQA-annotator), a web-based annotator for closed-domain question answering datasets with SQuAD format.
 
-3. Evaluate your model:
+3. Evaluate the reader of your model:
 
     ```python
     from cdqa.utils.metrics import evaluate, evaluate_from_files
@@ -128,6 +128,15 @@ In order to evaluate models on your custom dataset you will need to annotate it.
     evaluate(dataset, predictions) # as json objects
 
     evaluate_from_files(dataset_file='dev-v1.1.json', prediction_file='predictions.json') # as json files
+    ```
+
+4. Evaluate a whole pipeline object:
+
+    ```python
+    from cdqa.utils.metrics import evaluate_pipeline
+
+    evaluate_pipeline(cdqa_pipeline, 'path-to-annotated-dataset.json')
+
     ```
 
 ### Practical examples
