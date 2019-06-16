@@ -1,4 +1,4 @@
-# cdQA (Closed Domain Question Answering)
+# cdQA: Closed Domain Question Answering
 
 [![Build Status](https://travis-ci.com/fmikaelian/cdQA.svg?token=Vzy9RRKRZ41ynd9q2BRX&branch=develop)](https://travis-ci.com/fmikaelian/cdQA)
 [![codecov](https://codecov.io/gh/fmikaelian/cdQA/branch/develop/graph/badge.svg?token=F16X0IU6RT)](https://codecov.io/gh/fmikaelian/cdQA)
@@ -59,9 +59,9 @@ Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI (Ubuntu)
 
 To use `cdqa` you need a `.csv` corpus file with the following columns:
 
-| date     | title             | category             | link                         | abstract             | paragraphs                                       | content                                       |
-| -------- | ----------------- | -------------------- | ---------------------------- | -------------------- | ------------------------------------------------ | --------------------------------------------- |
-| DD/MM/YY | The Article Title | The Article Category | https://the-article-link.com | The Article Abstract | [Paragraph 1 of Article, Paragraph N of Article] | Paragraph 1 of Article Paragraph N of Article |
+| title             | paragraphs                                       |
+| ----------------- | ------------------------------------------------ |
+| The Article Title | [Paragraph 1 of Article, Paragraph N of Article]
 
 You can use the converters to create this file:
 
@@ -83,15 +83,15 @@ df = pd.read_csv('your-custom-corpus-here.csv')
 Fit the pipeline on your corpus using the pre-trained reader:
 
 ```python
-cdqa_pipeline = QAPipeline(model='bert_qa_squad_v1.1_sklearn.joblib')
+cdqa_pipeline = QAPipeline(model='bert_qa_vCPU-sklearn.joblib')
 cdqa_pipeline.fit(X=df)
 ```
 
-If you want to fine-tune the reader on your custom data (it must be a json file in SQuAD format with annotated questions and answers):
+If you want to fine-tune the reader on your custom SQuAD-like annotated dataset:
 
 ```python
 cdqa_pipeline = QAPipeline()
-cdqa_pipeline.fit_reader('path-to-data.json')
+cdqa_pipeline.fit_reader('path-to-custom-squad-like-dataset.json')
 ```
 
 ### Making predictions
@@ -99,8 +99,7 @@ cdqa_pipeline.fit_reader('path-to-data.json')
 To get the best prediction given an input query:
 
 ```python
-query = 'your custom question here'
-
+query = 'your question here'
 cdqa_pipeline.predict(X=query)
 ```
 
@@ -113,27 +112,25 @@ In order to evaluate models on your custom dataset you will need to annotate it.
     ```python
     from cdqa.utils.converter import df2squad
 
-    json_data = df2squad(df=df, squad_version='v2.0', output_dir='../data', filename='bnpp_newsroom-v1.1')
+    json_data = df2squad(df=df, squad_version='v2.0', output_dir='data', filename='bnpp_newsroom-v1.1')
     ```
 
 2. Use an annotator to add ground truth question-answer pairs:
 
-    Please refer to [`cdQA-annotator`](https://github.com/fmikaelian/cdQA-annotator), a web-based annotator for closed-domain question answering datasets with SQuAD format.
+    Please refer to our [`cdQA-annotator`](https://github.com/fmikaelian/cdQA-annotator), a web-based annotator for closed-domain question answering datasets with SQuAD format.
 
-3. Evaluate the reader of your model:
+3. Evaluate the reader:
 
     ```python
-    from cdqa.utils.metrics import evaluate, evaluate_from_files
+    from cdqa.utils.evaluation import evaluate_reader
 
-    evaluate(dataset, predictions) # as json objects
-
-    evaluate_from_files(dataset_file='dev-v1.1.json', prediction_file='predictions.json') # as json files
+    evaluate_reader(dataset_file='path-to-annotated-dataset.json', prediction_file='predictions.json')
     ```
 
 4. Evaluate a whole pipeline object:
 
     ```python
-    from cdqa.utils.metrics import evaluate_pipeline
+    from cdqa.utils.evaluation import evaluate_pipeline
 
     evaluate_pipeline(cdqa_pipeline, 'path-to-annotated-dataset.json')
 
@@ -154,13 +151,13 @@ You can deploy a `cdQA` REST API by executing:
 FLASK_APP=api.py flask run -h 0.0.0.0
 ```
 
-To try it, execute:
+You can now make requests to test your API (here using [HTTPie](https://httpie.org/)):
 
 ```shell
 http localhost:5000/api query=='your question here'
 ```
 
-If you wish to serve a user interface, follow the instructions of [cdQA-ui](https://github.com/fmikaelian/cdQA-ui), a web interface developed for `cdQA`.
+If you wish to serve a user interface on top of your `cdQA` system, follow the instructions of [cdQA-ui](https://github.com/fmikaelian/cdQA-ui), a web interface developed for `cdQA`.
 
 ### With docker
 
