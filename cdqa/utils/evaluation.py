@@ -74,9 +74,9 @@ def evaluate(dataset, predictions):
 
     return {'exact_match': exact_match, 'f1': f1}
 
-def evaluate_from_files(dataset_file, prediction_file, expected_version = '1.1'):
+def evaluate_reader(dataset_file, prediction_file, expected_version = '1.1'):
     """Evaluation for SQuAD
-    
+
     Parameters
     ----------
     dataset_file : [type]
@@ -85,7 +85,7 @@ def evaluate_from_files(dataset_file, prediction_file, expected_version = '1.1')
         Prediction File
     expected_version : str, optional
         [description], by default '1.1'
-    
+
     Returns
     -------
     [type]
@@ -101,5 +101,37 @@ def evaluate_from_files(dataset_file, prediction_file, expected_version = '1.1')
         dataset = dataset_json['data']
     with open(prediction_file) as prediction_file:
         predictions = json.load(prediction_file)
-    
+
     return evaluate(dataset, predictions)
+
+def evaluate_pipeline(cdqa_pipeline, annotated_json):
+    """Evaluation method for a whole pipeline (retriever + reader)
+
+    Parameters
+    ----------
+    cdqa_pipeline: QAPipeline object
+        Pipeline to be evaluated
+    annotated_json: str
+        path to json file in SQuAD format with annotated questions and answers
+
+    Returns
+    -------
+    A dictionary with exact match and f1 scores
+
+    """
+
+    with open(annotated_json) as file:
+        data = json.load(file)
+    all_predictions = dict()
+    articles = data['data']
+    for article in articles:
+        paragraphs = article['paragraphs']
+        for paragraph in paragraphs:
+            questions = paragraph['qas']
+            for question in questions:
+                query = question['question']
+                id = question['id']
+                prediction = cdqa_pipeline.predict(X=query)
+                all_predictions[id] = prediction[0]
+
+    return evaluate(data['data'], all_predictions)
