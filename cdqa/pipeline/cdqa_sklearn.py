@@ -82,6 +82,7 @@ class QAPipeline(BaseEstimator):
         """
 
         self.metadata = X
+        self.metadata['content'] = self.metadata['paragraphs'].apply(lambda x: ' '.join(x))
         self.retriever.fit(self.metadata['content'])
 
         return self
