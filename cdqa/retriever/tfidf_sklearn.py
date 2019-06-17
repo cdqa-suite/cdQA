@@ -22,7 +22,7 @@ class TfidfRetriever(BaseEstimator):
         an iterable which yields either str, unicode or file objects
     top_n : int
         maximum number of top articles to retrieve
-        header should be of format: date, title, category, link, abstract, paragraphs, content.
+        header should be of format: title, paragraphs.
     verbose : bool, optional
         If true, all of the warnings related to data processing will be printed.
 

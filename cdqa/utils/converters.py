@@ -6,12 +6,12 @@ import uuid
 
 def df2squad(df, squad_version='v2.0', output_dir=None, filename=None):
     """
-     Converts a pandas dataframe with columns ['title', 'content'] to a json file with SQuAD format.
+     Converts a pandas dataframe with columns ['title', 'paragraphs'] to a json file with SQuAD format.
 
      Parameters
     ----------
      df : pandas.DataFrame
-         a pandas dataframe with columns ['title', 'content']
+         a pandas dataframe with columns ['title', 'paragraphs']
      squad_version : str, optional
          the SQuAD dataset version format (the default is 'v2.0')
      output_dir : str, optional
