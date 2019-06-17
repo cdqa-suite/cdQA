@@ -13,7 +13,6 @@ CORS(app)
 
 df = pd.read_csv('data/bnpp_newsroom_v1.1/bnpp_newsroom-v1.1.csv', converters={'paragraphs': literal_eval})
 df = filter_paragraphs(df)
-df['content'] = df['paragraphs'].apply(lambda x: ' '.join(x))
 
 cdqa_pipeline = QAPipeline(reader='models/bert_qa_squad_v1.1_sklearn/bert_qa_squad_v1.1_sklearn.joblib')
 cdqa_pipeline.fit(X=df)

@@ -19,7 +19,7 @@ class QAPipeline(BaseEstimator):
     ----------
     metadata: pandas.DataFrame
         dataframe containing your corpus of documents metadata
-        header should be of format: date, title, category, link, abstract, paragraphs, content.
+        header should be of format: title, paragraphs.
     reader: str (path to .joblib) or .joblib object of an instance of BertQA (BERT model with sklearn wrapper), optional
     bert_version: str
         Bert pre-trained model selected in the list: bert-base-uncased,
@@ -77,11 +77,12 @@ class QAPipeline(BaseEstimator):
         Parameters
         ----------
         X: pandas.Dataframe
-            Dataframe with the following columns: "title", "paragraphs" and "content"
+            Dataframe with the following columns: "title", "paragraphs"
 
         """
 
         self.metadata = X
+        self.metadata['content'] = self.metadata['paragraphs'].apply(lambda x: ' '.join(x))
         self.retriever.fit(self.metadata['content'])
 
         return self
