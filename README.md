@@ -12,22 +12,24 @@
 
 An end-to-end closed-domain question answering system with BERT and classic IR methods 📚
 
-- [Installation](#installation)
-  - [With pip](#with-pip)
-  - [From source](#from-source)
-  - [Hardware Requirements](#hardware-requirements)
-- [Getting started](#getting-started)
-  - [How it works](#how-it-works)
-  - [Preparing your data](#preparing-your-data)
-  - [Training models](#training-models)
-  - [Making predictions](#making-predictions)
-  - [Evaluating models](#evaluating-models)
-  - [Practical examples](#practical-examples)
-- [Deployment](#deployment)
-  - [Manual](#manual)
-  - [With docker](#with-docker)
-- [Contributing](#contributing)
-- [References](#references)
+## Table of Contents <!-- omit in toc -->
+
+- [Installation](#Installation)
+  - [With pip](#With-pip)
+  - [From source](#From-source)
+  - [Hardware Requirements](#Hardware-Requirements)
+- [Getting started](#Getting-started)
+  - [How it works](#How-it-works)
+  - [Preparing your data](#Preparing-your-data)
+  - [Training models](#Training-models)
+  - [Making predictions](#Making-predictions)
+  - [Evaluating models](#Evaluating-models)
+  - [Practical examples](#Practical-examples)
+- [Deployment](#Deployment)
+  - [Manual](#Manual)
+  - [With docker](#With-docker)
+- [Contributing](#Contributing)
+- [References](#References)
 
 ## Installation
 

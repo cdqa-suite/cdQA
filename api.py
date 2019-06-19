@@ -16,7 +16,6 @@ df = filter_paragraphs(df)
 
 cdqa_pipeline = QAPipeline(reader='models/bert_qa_squad_v1.1_sklearn/bert_qa_squad_v1.1_sklearn.joblib')
 cdqa_pipeline.fit(X=df)
-cdqa_pipeline.reader.output_dir = 'logs/'
 
 @app.route('/api', methods=['GET'])
 def api():
