@@ -7,9 +7,9 @@ import pandas as pd
 
 def pdf_converter(directory_path):
     list_pdf = os.listdir(directory_path)
-    data = pd.DataFrame(columns=['title', 'paragraphs'])
+    df = pd.DataFrame(columns=['title', 'paragraphs'])
     for i, pdf in enumerate(list_pdf):
-        data.loc[i] = [pdf, None]
+        df.loc[i] = [pdf, None]
         raw = parser.from_file(directory_path+pdf)
         s = raw['content']
         paragraphs = re.split(u'\n(?=\u2028|[A-Z-0-9])', s)
@@ -17,8 +17,8 @@ def pdf_converter(directory_path):
         for p in paragraphs:
             if len(p) >= 200:
                 list_par.append(p.replace('\n', ''))
-            data.loc[i, 'paragraphs'] = list_par
-    return data
+            df.loc[i, 'paragraphs'] = list_par
+    return df
 
 
 def main():

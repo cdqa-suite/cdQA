@@ -21,7 +21,7 @@ def download_releases_assets():
     token = os.environ['token']
     g = Github(token)
 
-    repo = g.get_repo('fmikaelian/cdQA')
+    repo = g.get_repo('cdqa-suite/cdQA')
 
     headers = {
         'Authorization': 'token {}'.format(token),

@@ -4,7 +4,7 @@ from tqdm import tqdm
 import uuid
 
 
-def df2squad(df, squad_version='v2.0', output_dir=None, filename=None):
+def df2squad(df, squad_version='v1.1', output_dir=None, filename=None):
     """
      Converts a pandas dataframe with columns ['title', 'paragraphs'] to a json file with SQuAD format.
 
@@ -33,7 +33,7 @@ def df2squad(df, squad_version='v2.0', output_dir=None, filename=None):
      >>> df = pd.read_csv('../data/bnpp_newsroom_v1.1/bnpp_newsroom-v1.1.csv', converters={'paragraphs': literal_eval})
      >>> df['paragraphs'] = df['paragraphs'].apply(filter_paragraphs)
 
-     >>> json_data = df2squad(df=df, squad_version='v2.0', output_dir='../data', filename='bnpp_newsroom-v1.1')
+     >>> json_data = df2squad(df=df, squad_version='v1.1', output_dir='../data', filename='bnpp_newsroom-v1.1')
     """
 
     json_data = {}

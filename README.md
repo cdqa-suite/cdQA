@@ -10,7 +10,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com/licenses/mit/)
 
-An end-to-end closed-domain question answering system with BERT and classic IR methods 📚
+An End-To-End Closed Domain Question Answering System.
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -42,7 +42,7 @@ pip install cdqa
 ### From source
 
 ```shell
-git clone https://github.com/fmikaelian/cdQA.git
+git clone https://github.com/cdqa-suite/cdQA.git
 cd cdQA
 pip install -e .
 ```
@@ -70,7 +70,7 @@ You can create this dataframe from a directory containing `.pdf` files by using 
 ```python
 from cdqa.utils.pdf_converter import pdf_converter
 
-df = pdf_converter(repo='path_to_pdf_folder')
+df = pdf_converter(directory_path='path_to_pdf_folder')
 ```
 
 We plan to improve and add more converters in the future. Stay tuned!
@@ -123,7 +123,7 @@ In order to evaluate models on your custom dataset you will need to annotate it.
 
 2. Use an annotator to add ground truth question-answer pairs:
 
-    Please refer to our [`cdQA-annotator`](https://github.com/fmikaelian/cdQA-annotator), a web-based annotator for closed-domain question answering datasets with SQuAD format.
+    Please refer to our [`cdQA-annotator`](https://github.com/cdqa-suite/cdQA-annotator), a web-based annotator for closed-domain question answering datasets with SQuAD format.
 
 3. Evaluate the reader:
 
