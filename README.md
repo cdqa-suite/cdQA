@@ -163,7 +163,7 @@ You can now make requests to test your API (here using [HTTPie](https://httpie.o
 http localhost:5000/api query=='your question here'
 ```
 
-If you wish to serve a user interface on top of your `cdQA` system, follow the instructions of [cdQA-ui](https://github.com/fmikaelian/cdQA-ui), a web interface developed for `cdQA`.
+If you wish to serve a user interface on top of your `cdQA` system, follow the instructions of [cdQA-ui](https://github.com/cdqa-suite/cdQA-ui), a web interface developed for `cdQA`.
 
 ### With docker
 
