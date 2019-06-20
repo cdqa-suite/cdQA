@@ -59,17 +59,21 @@ Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI (Ubuntu)
 
 ### Preparing your data
 
-To use `cdqa` you need a `.csv` corpus file with the following columns:
+To use `cdqa` you need a corpus pandas dataframe with the following columns:
 
 | title             | paragraphs                                       |
 | ----------------- | ------------------------------------------------ |
 | The Article Title | [Paragraph 1 of Article, Paragraph N of Article] |
 
-You can use the converters to create this file:
+You can create this dataframe from a directory containing `.pdf` files by using our converter:
 
 ```python
-# create a corpus dataframe from a directory containing .pdf files
+from cdqa.utils.pdf_converter import pdf_converter
+
+df = pdf_converter(repo='path_to_pdf_folder')
 ```
+
+We plan to improve and add more converters in the future. Stay tuned!
 
 ### Training models
 
@@ -114,7 +118,7 @@ In order to evaluate models on your custom dataset you will need to annotate it.
     ```python
     from cdqa.utils.converter import df2squad
 
-    json_data = df2squad(df=df, squad_version='v2.0', output_dir='data', filename='bnpp_newsroom-v1.1')
+    json_data = df2squad(df=df, squad_version='v1.1', output_dir='.', filename='bnpp_newsroom-v1.1')
     ```
 
 2. Use an annotator to add ground truth question-answer pairs:
