@@ -912,7 +912,7 @@ class BertQA(BaseEstimator):
     gradient_accumulation_steps : int, optional
         Number of updates steps to accumulate before performing a backward/update pass. (the default is 1)
     do_lower_case : bool, optional
-        Whether to lower case the input text. True for uncased models, False for cased models. (the default is False)
+        Whether to lower case the input text. True for uncased models, False for cased models. (the default is True)
     local_rank : int, optional
         local_rank for distributed training on gpus (the default is -1)
     fp16 : bool, optional
@@ -971,7 +971,7 @@ class BertQA(BaseEstimator):
                  no_cuda=False,
                  seed=42,
                  gradient_accumulation_steps=1,
-                 do_lower_case=False,
+                 do_lower_case=True,
                  local_rank=-1,
                  fp16=False,
                  loss_scale=0,
@@ -1221,6 +1221,8 @@ class BertQA(BaseEstimator):
                                              start_logits=start_logits,
                                              end_logits=end_logits))
         if self.output_dir:
+            if not os.path.exists(self.output_dir):
+                os.makedirs(self.output_dir)
             output_prediction_file = os.path.join(self.output_dir, "predictions.json")
             output_nbest_file = os.path.join(self.output_dir, "nbest_predictions.json")
             output_null_log_odds_file = os.path.join(self.output_dir, "null_odds.json")
