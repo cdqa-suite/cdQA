@@ -1,14 +1,14 @@
 # cdQA: Closed Domain Question Answering
 
-[![Build Status](https://travis-ci.com/fmikaelian/cdQA.svg?token=Vzy9RRKRZ41ynd9q2BRX&branch=develop)](https://travis-ci.com/fmikaelian/cdQA)
-[![codecov](https://codecov.io/gh/fmikaelian/cdQA/branch/develop/graph/badge.svg?token=F16X0IU6RT)](https://codecov.io/gh/fmikaelian/cdQA)
+[![Build Status](https://travis-ci.com/cdqa-suite/cdQA.svg?token=Vzy9RRKRZ41ynd9q2BRX&branch=develop)](https://travis-ci.com/cdqa-suite/cdQA)
+[![codecov](https://codecov.io/gh/cdqa-suite/cdQA/branch/develop/graph/badge.svg?token=F16X0IU6RT)](https://codecov.io/gh/cdqa-suite/cdQA)
 [![PyPI Version](https://img.shields.io/pypi/v/cdqa.svg)](https://pypi.org/project/cdqa/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/cdqa.svg)](https://pypi.org/project/cdqa/)
 [![Binder](https://mybinder.org/badge.svg)]()
 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)]()
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](.github/CODE_OF_CONDUCT.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com/licenses/mit/)
+![GitHub](https://img.shields.io/github/license/cdqa-suite/cdqa.svg)
 
 An End-To-End Closed Domain Question Answering System.
 
@@ -19,14 +19,15 @@ An End-To-End Closed Domain Question Answering System.
   - [From source](#From-source)
   - [Hardware Requirements](#Hardware-Requirements)
 - [Getting started](#Getting-started)
-  - [How it works](#How-it-works)
   - [Preparing your data](#Preparing-your-data)
+    - [Manual](#Manual)
+    - [With converters](#With-converters)
   - [Training models](#Training-models)
   - [Making predictions](#Making-predictions)
   - [Evaluating models](#Evaluating-models)
   - [Practical examples](#Practical-examples)
 - [Deployment](#Deployment)
-  - [Manual](#Manual)
+  - [Manual](#Manual-1)
   - [With docker](#With-docker)
 - [Contributing](#Contributing)
 - [References](#References)
@@ -53,19 +54,19 @@ Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI (Ubuntu)
 
 ## Getting started
 
-### How it works
-
-<img src="docs/how-it-works.png" width="30%"/>
-
 ### Preparing your data
 
-To use `cdqa` you need a corpus pandas dataframe with the following columns:
+#### Manual
+
+To use `cdqa` you need to create a pandas dataframe with the following columns:
 
 | title             | paragraphs                                       |
 | ----------------- | ------------------------------------------------ |
 | The Article Title | [Paragraph 1 of Article, Paragraph N of Article] |
 
-You can create this dataframe from a directory containing `.pdf` files by using our converter:
+#### With converters
+
+The objective of `cdqa` converters to to make it easy to create this dataframe from your raw documents database. For instance the `pdf_converter` can create a `cdqa` dataframe from a directory containing `.pdf` files:
 
 ```python
 from cdqa.utils.pdf_converter import pdf_converter
@@ -187,6 +188,6 @@ Read our [Contributing Guidelines](.github/CONTRIBUTING.md).
 | :newspaper: Paper    | [Passage Re-ranking with BERT](https://arxiv.org/abs/1901.04085)                                                                             | Rodrigo Nogueira, Kyunghyun Cho                                                                                                                                                                                                                                                    | 2019 |
 | :newspaper: Paper    | [MRQA: Machine Reading for Question Answering](https://mrqa.github.io/)                                                                      | Jonathan Berant, Percy Liang, Luke Zettlemoyer                                                                                                                                                                                                                                     | 2019 |
 | :newspaper: Paper    | [Unsupervised Question Answering by Cloze Translation](https://arxiv.org/abs/1906.04980)                                                     | Patrick Lewis, Ludovic Denoyer, Sebastian Riedel                                                                                                                                                                                                                                   | 2019 |
-| :computer: Framework | [Scikit-learn: Machine Learning in Python](http://jmlr.csail.mit.edu/papers/v12/pedregosa11a.html)                                           | Fabian Pedregosa, Gaël Varoquaux, Alexandre Gramfort, Vincent Michel, Bertrand Thirion, Olivier Grisel, Mathieu Blondel, Peter Prettenhofer, Ron Weiss, Vincent Dubourg, Jake Vanderplas, Alexandre Passos, David Cournapeau, Matthieu Brucher, Matthieu Perrot, Édouard Duchesnay | 2011 |
+| :computer: Framework | [Scikit-learn: Machine Learning in Python](http://jmlr.csail.mit.edu/papers/v12/pedregosa11a.html)                                           | Pedregosa et al. | 2011 |
 | :computer: Framework | [PyTorch](https://arxiv.org/abs/1906.04980)                                                                                                  | Adam Paszke, Sam Gross, Soumith Chintala, Gregory Chanan                                                                                                                                                                                                                           | 2016 |
 | :computer: Framework | [PyTorch Pretrained BERT: The Big & Extending Repository of pretrained Transformers](https://github.com/huggingface/pytorch-pretrained-BERT) | Hugging Face                                                                                                                                                                                                                                                                       | 2018 |
