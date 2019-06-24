@@ -9,7 +9,7 @@ def read(file):
 setup(
     name='cdqa',
     version='0.0.1',
-    author='Félix MIKAELIAN',
+    author='Félix MIKAELIAN, André FARIAS, Matyas AMROUCHE, Olivier SANS, Théo NAZON',
     description='An end-to-end closed-domain question answering system with BERT and classic IR methods 📚',
     keywords='reading comprehension question answering deep learning natural language processing information retrieval bert',
     license='MIT',
