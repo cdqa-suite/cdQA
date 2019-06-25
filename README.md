@@ -8,7 +8,7 @@
 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)]()
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](.github/CODE_OF_CONDUCT.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
-![GitHub](https://img.shields.io/github/license/cdqa-suite/cdqa.svg)
+![GitHub](https://img.shields.io/github/license/cdqa-suite/cdQA.svg)
 
 An End-To-End Closed Domain Question Answering System.
 
