@@ -1,6 +1,5 @@
 Flask
 flask_cors
-PyGithub
 joblib
 pandas
 prettytable
