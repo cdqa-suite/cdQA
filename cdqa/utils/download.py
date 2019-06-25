@@ -18,19 +18,17 @@ def download_squad_assets():
 
 
 def download_releases_assets():
-    token = os.environ['token']
-    g = Github(token)
+    g = Github()
 
     repo = g.get_repo('cdqa-suite/cdQA')
 
     headers = {
-        'Authorization': 'token {}'.format(token),
         'Accept': 'application/octet-stream'
     }
 
     # download models
-    models = ['bert_qa_squad_v1.1_sklearn',
-              'bert_qa_squad_vCPU']
+    models = ['bert_qa_vGPU',
+              'bert_qa_vCPU']
 
     for model in models:
         print('Downloading: {}'.format(model))
@@ -41,8 +39,12 @@ def download_releases_assets():
             print(asset.name, asset.url)
             if (os.path.splitext(asset.name)[1] == '.bin') or (os.path.splitext(asset.name)[1] == '.joblib') or (asset.name == 'bert_config.json'):
                 directory = 'models'
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
             else:
                 directory = 'logs'
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
             response = requests.get(asset.url, headers=headers)
             if not os.path.exists(os.path.join(directory, release.tag_name)):
                 os.makedirs(os.path.join(directory, release.tag_name))
@@ -65,5 +67,8 @@ def download_releases_assets():
 
 
 if __name__ == '__main__':
+    directory = 'data'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     download_squad_assets()
     download_releases_assets()
