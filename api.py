@@ -11,10 +11,13 @@ from cdqa.pipeline.cdqa_sklearn import QAPipeline
 app = Flask(__name__)
 CORS(app)
 
-df = pd.read_csv('data/bnpp_newsroom_v1.1/bnpp_newsroom-v1.1.csv', converters={'paragraphs': literal_eval})
+dataset_path = os.environ['dataset_path']
+reader_path = os.environ['reader_path']
+
+df = pd.read_csv(dataset_path, converters={'paragraphs': literal_eval})
 df = filter_paragraphs(df)
 
-cdqa_pipeline = QAPipeline(reader='models/bert_qa_squad_v1.1_sklearn/bert_qa_squad_v1.1_sklearn.joblib')
+cdqa_pipeline = QAPipeline(reader=reader_path)
 cdqa_pipeline.fit(X=df)
 
 @app.route('/api', methods=['GET'])

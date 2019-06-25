@@ -17,9 +17,12 @@ reader = BertQA(train_batch_size=12,
 
 reader.fit(X=(train_examples, train_features))
 
-# send it to CPU
+# save GPU version locally
+joblib.dump(reader, os.path.join(reader.output_dir, 'bert_qa_vGPU.joblib'))
+
+# send current reader model to CPU
 reader.model.to('cpu')
 reader.device = torch.device('cpu')
 
-# save it locally
+# save CPU it locally
 joblib.dump(reader, os.path.join(reader.output_dir, 'bert_qa_vCPU.joblib'))

@@ -74,7 +74,7 @@ from cdqa.utils.pdf_converter import pdf_converter
 df = pdf_converter(directory_path='path_to_pdf_folder')
 ```
 
-We plan to improve and add more converters in the future. Stay tuned!
+You will need to install the [`Tika REST Server`](wiki.apache.org/tika/TikaJAXRS) to use this converter. We plan to improve and add more converters in the future. Stay tuned!
 
 ### Training models
 
@@ -97,7 +97,7 @@ cdqa_pipeline.fit(X=df)
 If you want to fine-tune the reader on your custom SQuAD-like annotated dataset:
 
 ```python
-cdqa_pipeline = QAPipeline()
+cdqa_pipeline = QAPipeline(model='bert_qa_vGPU-sklearn.joblib')
 cdqa_pipeline.fit_reader('path-to-custom-squad-like-dataset.json')
 ```
 
@@ -119,7 +119,7 @@ In order to evaluate models on your custom dataset you will need to annotate it.
     ```python
     from cdqa.utils.converter import df2squad
 
-    json_data = df2squad(df=df, squad_version='v1.1', output_dir='.', filename='bnpp_newsroom-v1.1')
+    json_data = df2squad(df=df, squad_version='v1.1', output_dir='.', filename='dataset-name')
     ```
 
 2. Use an annotator to add ground truth question-answer pairs:
@@ -155,6 +155,9 @@ In order to evaluate models on your custom dataset you will need to annotate it.
 You can deploy a `cdQA` REST API by executing:
 
 ```shell
+export dataset_path = 'path-to-dataset.csv'
+export reader_path = 'path-to-reader-model'
+
 FLASK_APP=api.py flask run -h 0.0.0.0
 ```
 
