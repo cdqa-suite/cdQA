@@ -7,13 +7,14 @@ from cdqa.pipeline.cdqa_sklearn import QAPipeline
 
 
 def execute_pipeline(query):
-    df = pd.read_csv('../data/bnpp_newsroom_v1.1/bnpp_newsroom-v1.1.csv',
+    df = pd.read_csv('data/bnpp_newsroom_v1.1/bnpp_newsroom-v1.1.csv',
                      converters={'paragraphs': literal_eval})
     df = filter_paragraphs(df)
 
     cdqa_pipeline = QAPipeline(
-        reader='../models/bert_qa_squad_v1.1_sklearn/bert_qa_squad_v1.1_sklearn.joblib')
+        reader='models/bert_qa_vCPU-sklearn.joblib')
     cdqa_pipeline.fit(X=df)
+    cdqa_pipeline.reader.output_dir = None
 
     prediction = cdqa_pipeline.predict(X=query)
 

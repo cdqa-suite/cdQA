@@ -4,8 +4,8 @@ python:
 install:
   - pip install --quiet .
 script:
-  - pytest --flake8
-  - codecov --token=$CODECOV_TOKEN
+  - python download.py
+  - pytest
 deploy:
   provider: pypi
   user: $PYPI_USERNAME
