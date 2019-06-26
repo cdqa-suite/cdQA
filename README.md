@@ -1,6 +1,6 @@
 # cdQA: Closed Domain Question Answering
 
-[![Build Status](https://travis-ci.com/cdqa-suite/cdQA.svg?token=Vzy9RRKRZ41ynd9q2BRX&branch=develop)](https://travis-ci.com/cdqa-suite/cdQA)
+[![Build Status](https://travis-ci.com/cdqa-suite/cdQA.svg?branch=master)](https://travis-ci.com/cdqa-suite/cdQA)
 [![codecov](https://codecov.io/gh/cdqa-suite/cdQA/branch/develop/graph/badge.svg?token=F16X0IU6RT)](https://codecov.io/gh/cdqa-suite/cdQA)
 [![PyPI Version](https://img.shields.io/pypi/v/cdqa.svg)](https://pypi.org/project/cdqa/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/cdqa.svg)](https://pypi.org/project/cdqa/)
@@ -22,6 +22,7 @@ An End-To-End Closed Domain Question Answering System.
   - [Preparing your data](#Preparing-your-data)
     - [Manual](#Manual)
     - [With converters](#With-converters)
+  - [Downloading pre-trained models](#Downloading-pre-trained-models)
   - [Training models](#Training-models)
   - [Making predictions](#Making-predictions)
   - [Evaluating models](#Evaluating-models)
@@ -31,6 +32,7 @@ An End-To-End Closed Domain Question Answering System.
   - [With docker](#With-docker)
 - [Contributing](#Contributing)
 - [References](#References)
+- [LICENSE](#LICENSE)
 
 ## Installation
 
@@ -50,7 +52,10 @@ pip install -e .
 
 ### Hardware Requirements
 
-Experiments have been done on an AWS EC2 `p3.2xlarge` Deep Learning AMI (Ubuntu) Version 22.0 + a single Tesla V100 16GB.
+Experiments have been done with:
+
+- **CPU** 👉 AWS EC2 `t2.medium` Deep Learning AMI (Ubuntu) Version 22.0
+- **GPU** 👉 AWS EC2 `p3.2xlarge` Deep Learning AMI (Ubuntu) Version 22.0 + a single Tesla V100 16GB.
 
 ## Getting started
 
@@ -75,6 +80,14 @@ df = pdf_converter(directory_path='path_to_pdf_folder')
 ```
 
 You will need to install the [`Tika REST Server`](wiki.apache.org/tika/TikaJAXRS) to use this converter. We plan to improve and add more converters in the future. Stay tuned!
+
+### Downloading pre-trained models
+
+You can download the models manually from the GitHub [releases](https://github.com/cdqa-suite/cdQA/releases) or use our download script:
+
+```shell
+python download.py
+```
 
 ### Training models
 
@@ -194,3 +207,7 @@ Read our [Contributing Guidelines](.github/CONTRIBUTING.md).
 | :computer: Framework | [Scikit-learn: Machine Learning in Python](http://jmlr.csail.mit.edu/papers/v12/pedregosa11a.html)                                           | Pedregosa et al. | 2011 |
 | :computer: Framework | [PyTorch](https://arxiv.org/abs/1906.04980)                                                                                                  | Adam Paszke, Sam Gross, Soumith Chintala, Gregory Chanan                                                                                                                                                                                                                           | 2016 |
 | :computer: Framework | [PyTorch Pretrained BERT: The Big & Extending Repository of pretrained Transformers](https://github.com/huggingface/pytorch-pretrained-BERT) | Hugging Face                                                                                                                                                                                                                                                                       | 2018 |
+
+## LICENSE
+
+[Apache-2.0](LICENSE)
