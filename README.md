@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/cdqa-suite/cdQA/branch/develop/graph/badge.svg?token=F16X0IU6RT)](https://codecov.io/gh/cdqa-suite/cdQA)
 [![PyPI Version](https://img.shields.io/pypi/v/cdqa.svg)](https://pypi.org/project/cdqa/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/cdqa.svg)](https://pypi.org/project/cdqa/)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=https%3A%2F%2Fgithub.com%2Fcdqa-suite%2FcdQA%2Fblob%2Fmaster%2Fexamples%2Ftutorial-predict-pipeline.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-predict-pipeline.ipynb)
 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-predict-pipeline.ipynb)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](.github/CODE_OF_CONDUCT.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
