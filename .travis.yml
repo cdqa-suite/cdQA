@@ -2,13 +2,16 @@ language: python
 python:
   - "3.6"
 install:
+  - pip install codecov pytest-cov
   - pip install --quiet .
 script:
   - python download.py
-  - pytest
+  - pytest --cov=cdqa tests/
 deploy:
   provider: pypi
   user: $PYPI_USERNAME
   password: $PYPI_PASSWORD
   on:
     branch: master
+after_success:
+  - codecov

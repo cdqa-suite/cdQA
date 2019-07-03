@@ -1,7 +1,7 @@
 # cdQA: Closed Domain Question Answering
 
 [![Build Status](https://travis-ci.com/cdqa-suite/cdQA.svg?branch=master)](https://travis-ci.com/cdqa-suite/cdQA)
-[![codecov](https://codecov.io/gh/cdqa-suite/cdQA/branch/develop/graph/badge.svg?token=F16X0IU6RT)](https://codecov.io/gh/cdqa-suite/cdQA)
+[![codecov](https://codecov.io/gh/cdqa-suite/cdQA/branch/master/graph/badge.svg)](https://codecov.io/gh/cdqa-suite/cdQA)
 [![PyPI Version](https://img.shields.io/pypi/v/cdqa.svg)](https://pypi.org/project/cdqa/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/cdqa.svg)](https://pypi.org/project/cdqa/)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-predict-pipeline.ipynb)
