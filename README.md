@@ -26,10 +26,9 @@ An End-To-End Closed Domain Question Answering System.
   - [Training models](#Training-models)
   - [Making predictions](#Making-predictions)
   - [Evaluating models](#Evaluating-models)
-  - [Practical examples](#Practical-examples)
+- [Notebook Examples](#Notebook-Examples)
 - [Deployment](#Deployment)
   - [Manual](#Manual-1)
-  - [With docker](#With-docker)
 - [Contributing](#Contributing)
 - [References](#References)
 - [LICENSE](#LICENSE)
@@ -79,7 +78,7 @@ from cdqa.utils.pdf_converter import pdf_converter
 df = pdf_converter(directory_path='path_to_pdf_folder')
 ```
 
-You will need to install the [`Tika REST Server`](wiki.apache.org/tika/TikaJAXRS) to use this converter. We plan to improve and add more converters in the future. Stay tuned!
+You will need to install [Java OpenJDK](https://openjdk.java.net/install/) to use this converter. We plan to improve and add more converters in the future. Stay tuned!
 
 ### Downloading pre-trained models
 
@@ -119,8 +118,7 @@ cdqa_pipeline.fit_reader('path-to-custom-squad-like-dataset.json')
 To get the best prediction given an input query:
 
 ```python
-query = 'your question here'
-cdqa_pipeline.predict(X=query)
+cdqa_pipeline.predict(X='your question here')
 ```
 
 ### Evaluating models
@@ -156,10 +154,14 @@ In order to evaluate models on your custom dataset you will need to annotate it.
 
     ```
 
-### Practical examples
+## Notebook Examples
 
-- [First steps with cdQA (notebook)](examples/tutorial-predict-pipeline.ipynb).
-- [Training the reader on SQuAD (script)](examples/tutorial-train-reader-squad.py)
+You can play directly with the notebook examples using [Binder](https://gke.mybinder.org/), without the need to install or download anything:
+
+- [Notebook [1]: First steps with cdQA](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-predict-pipeline.ipynb)
+- [Notebook [2]: Training the reader on SQuAD](examples/Ftutorial-train-reader-squad.py)
+
+Binder provides temporary environments and may be slow to start but we recommend it if you want to get started with `cdqa` easily.
 
 ## Deployment
 
@@ -181,10 +183,6 @@ http localhost:5000/api query=='your question here'
 ```
 
 If you wish to serve a user interface on top of your `cdQA` system, follow the instructions of [cdQA-ui](https://github.com/cdqa-suite/cdQA-ui), a web interface developed for `cdQA`.
-
-### With docker
-
-You can use the [Dockerfile](Dockerfile) to deploy the full `cdQA` app.
 
 ## Contributing
 
