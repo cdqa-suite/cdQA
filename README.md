@@ -64,9 +64,9 @@ Experiments have been done with:
 
 To use `cdqa` you need to create a pandas dataframe with the following columns:
 
-| title             | paragraphs                                       |
-| ----------------- | ------------------------------------------------ |
-| The Article Title | [Paragraph 1 of Article, Paragraph N of Article] |
+| title             | paragraphs                                             |
+| ----------------- | ------------------------------------------------------ |
+| The Article Title | [Paragraph 1 of Article, ... , Paragraph N of Article] |
 
 #### With converters
 
