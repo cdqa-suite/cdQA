@@ -156,10 +156,13 @@ In order to evaluate models on your custom dataset you will need to annotate it.
 
 ## Notebook Examples
 
-You can play directly with the notebook examples using [Binder](https://gke.mybinder.org/), without the need to install or download anything:
+We prepared some notebook examples under the [examples](examples) directory.
+
+You can also play directly with these notebook examples using [Binder](https://gke.mybinder.org/), without the need to install or download anything:
 
 - [Notebook [1]: First steps with cdQA](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-predict-pipeline.ipynb)
-- [Notebook [2]: Training the reader on SQuAD](examples/Ftutorial-train-reader-squad.py)
+- [Notebook [2]: Using the PDF converter](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-use-pdf-converter.ipynb)
+- [Notebook [3]: Training the reader on SQuAD](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-train-reader-squad.ipynb)
 
 Binder provides temporary environments and may be slow to start but we recommend it if you want to get started with `cdqa` easily.
 
