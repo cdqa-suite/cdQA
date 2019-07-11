@@ -158,13 +158,13 @@ In order to evaluate models on your custom dataset you will need to annotate it.
 
 We prepared some notebook examples under the [examples](examples) directory.
 
-You can also play directly with these notebook examples using [Binder](https://gke.mybinder.org/), without the need to install or download anything:
+You can also play directly with these notebook examples using [Binder](https://gke.mybinder.org/) or [Google Colaboratory](https://colab.research.google.com/notebooks/welcome.ipynb):
 
-- [Notebook [1]: First steps with cdQA](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-predict-pipeline.ipynb)
-- [Notebook [2]: Using the PDF converter](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-use-pdf-converter.ipynb)
-- [Notebook [3]: Training the reader on SQuAD](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-train-reader-squad.ipynb)
+- **Notebook [1]: First steps with cdQA (CPU or GPU)** 👉 [Binder](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-predict-pipeline.ipynb) or [Google Colaboratory](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-predict-pipeline.ipynb)
+- **Notebook [2]: Using the PDF converter (CPU or GPU)** 👉 [Binder](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-use-pdf-converter.ipynb) or [Google Colaboratory](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-use-pdf-converter.ipynb)
+- **Notebook [3]: Training the reader on SQuAD (GPU)** 👉 [Google Colaboratory](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-train-reader-squad.ipynb)
 
-Binder provides temporary environments and may be slow to start but we recommend it if you want to get started with `cdqa` easily.
+Binder and Google Colaboratory provide temporary environments and may be slow to start but we recommend them if you want to get started with `cdqa` easily.
 
 ## Deployment
 
