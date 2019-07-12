@@ -77,7 +77,7 @@ See more about this workflow at https://guides.github.com/introduction/flow/
 │       ├── cdqa.tex --> the research paper describing cdqa
 │       └── neurips_2019.sty --> the style file for the research paper from neurips
 ├── examples
-│   ├── tutorial-predict-pipeline.ipynb --> examples to use cdqa for prediction
+│   ├── tutorial-first-steps-cdqa.ipynb --> examples to use cdqa for prediction
 ├── logs --> stores the outpout predictions and metrics
 ├── models --> stores the trained models
 ├── requirements.txt
