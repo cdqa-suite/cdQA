@@ -4,8 +4,8 @@
 [![codecov](https://codecov.io/gh/cdqa-suite/cdQA/branch/master/graph/badge.svg)](https://codecov.io/gh/cdqa-suite/cdQA)
 [![PyPI Version](https://img.shields.io/pypi/v/cdqa.svg)](https://pypi.org/project/cdqa/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/cdqa.svg)](https://pypi.org/project/cdqa/)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-predict-pipeline.ipynb)
-[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-predict-pipeline.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-first-steps-cdqa.ipynb)
+[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-first-steps-cdqa.ipynb)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v1.4%20adopted-ff69b4.svg)](.github/CODE_OF_CONDUCT.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 ![GitHub](https://img.shields.io/github/license/cdqa-suite/cdQA.svg)
@@ -62,7 +62,7 @@ Experiments have been done with:
 
 #### Manual
 
-To use `cdqa` you need to create a pandas dataframe with the following columns:
+To use `cdQA` you need to create a pandas dataframe with the following columns:
 
 | title             | paragraphs                                             |
 | ----------------- | ------------------------------------------------------ |
@@ -90,18 +90,14 @@ python download.py
 
 ### Training models
 
-Read your corpus in `.csv` format:
+Fit the pipeline on your corpus using the pre-trained reader:
 
 ```python
 import pandas as pd
 from cdqa.pipeline.cdqa_sklearn import QAPipeline
 
 df = pd.read_csv('your-custom-corpus-here.csv')
-```
 
-Fit the pipeline on your corpus using the pre-trained reader:
-
-```python
 cdqa_pipeline = QAPipeline(model='bert_qa_vCPU-sklearn.joblib')
 cdqa_pipeline.fit(X=df)
 ```
@@ -160,11 +156,13 @@ We prepared some notebook examples under the [examples](examples) directory.
 
 You can also play directly with these notebook examples using [Binder](https://gke.mybinder.org/) or [Google Colaboratory](https://colab.research.google.com/notebooks/welcome.ipynb):
 
-- **Notebook [1]: First steps with cdQA (CPU or GPU)** 👉 [Binder](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-predict-pipeline.ipynb) or [Google Colaboratory](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-predict-pipeline.ipynb)
-- **Notebook [2]: Using the PDF converter (CPU or GPU)** 👉 [Binder](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-use-pdf-converter.ipynb) or [Google Colaboratory](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-use-pdf-converter.ipynb)
-- **Notebook [3]: Training the reader on SQuAD (GPU)** 👉 [Google Colaboratory](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-train-reader-squad.ipynb)
+| Notebook                         | Hardware     | Platform                                                                                                                                                                                                                                                                                                                                      |
+| -------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [1] First steps with cdQA        | (CPU or GPU) | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-first-steps-cdqa.ipynb) [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-first-steps-cdqa.ipynb)   |
+| [2] Using the PDF converter      | (CPU or GPU) | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-use-pdf-converter.ipynb) [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-use-pdf-converter.ipynb) |
+| [3] Training the reader on SQuAD | (GPU)        | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-train-reader-squad.ipynb)                                                                                                                                                         |
 
-Binder and Google Colaboratory provide temporary environments and may be slow to start but we recommend them if you want to get started with `cdqa` easily.
+Binder and Google Colaboratory provide temporary environments and may be slow to start but we recommend them if you want to get started with `cdQA` easily.
 
 ## Deployment
 
@@ -193,21 +191,21 @@ Read our [Contributing Guidelines](.github/CONTRIBUTING.md).
 
 ## References
 
-| Type                 | Title                                                                                                                                        | Author                                                                                                                                                                                                                                                                             | Year |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
-| :video_camera: Video | [Stanford CS224N: NLP with Deep Learning Lecture 10 – Question Answering](https://youtube.com/watch?v=yIdF-17HwSk)                           | Christopher Manning                                                                                                                                                                                                                                                                | 2019 |
-| :newspaper: Paper    | [Reading Wikipedia to Answer Open-Domain Questions](https://arxiv.org/abs/1704.00051)                                                        | Danqi Chen, Adam Fisch, Jason Weston, Antoine Bordes                                                                                                                                                                                                                               | 2017 |
-| :newspaper: Paper    | [Neural Reading Comprehension and Beyond](https://cs.stanford.edu/people/danqi/papers/thesis.pdf)                                            | Danqi Chen                                                                                                                                                                                                                                                                         | 2018 |
-| :newspaper: Paper    | [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805)                         | Jacob Devlin, Ming-Wei Chang, Kenton Lee, Kristina Toutanova                                                                                                                                                                                                                       | 2018 |
-| :newspaper: Paper    | [Contextual Word Representations: A Contextual Introduction](https://arxiv.org/abs/1902.06006)                                               | Noah A. Smith                                                                                                                                                                                                                                                                      | 2019 |
-| :newspaper: Paper    | [End-to-End Open-Domain Question Answering with BERTserini](https://arxiv.org/abs/1902.01718)                                                | Wei Yang, Yuqing Xie, Aileen Lin, Xingyu Li, Luchen Tan, Kun Xiong, Ming Li, Jimmy Lin                                                                                                                                                                                             | 2019 |
-| :newspaper: Paper    | [Data Augmentation for BERT Fine-Tuning in Open-Domain Question Answering](https://arxiv.org/abs/1904.06652)                                 | Wei Yang, Yuqing Xie, Luchen Tan, Kun Xiong, Ming Li, Jimmy Lin                                                                                                                                                                                                                    | 2019 |
-| :newspaper: Paper    | [Passage Re-ranking with BERT](https://arxiv.org/abs/1901.04085)                                                                             | Rodrigo Nogueira, Kyunghyun Cho                                                                                                                                                                                                                                                    | 2019 |
-| :newspaper: Paper    | [MRQA: Machine Reading for Question Answering](https://mrqa.github.io/)                                                                      | Jonathan Berant, Percy Liang, Luke Zettlemoyer                                                                                                                                                                                                                                     | 2019 |
-| :newspaper: Paper    | [Unsupervised Question Answering by Cloze Translation](https://arxiv.org/abs/1906.04980)                                                     | Patrick Lewis, Ludovic Denoyer, Sebastian Riedel                                                                                                                                                                                                                                   | 2019 |
-| :computer: Framework | [Scikit-learn: Machine Learning in Python](http://jmlr.csail.mit.edu/papers/v12/pedregosa11a.html)                                           | Pedregosa et al. | 2011 |
-| :computer: Framework | [PyTorch](https://arxiv.org/abs/1906.04980)                                                                                                  | Adam Paszke, Sam Gross, Soumith Chintala, Gregory Chanan                                                                                                                                                                                                                           | 2016 |
-| :computer: Framework | [PyTorch Pretrained BERT: The Big & Extending Repository of pretrained Transformers](https://github.com/huggingface/pytorch-pretrained-BERT) | Hugging Face                                                                                                                                                                                                                                                                       | 2018 |
+| Type                 | Title                                                                                                                                        | Author                                                                                 | Year |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---- |
+| :video_camera: Video | [Stanford CS224N: NLP with Deep Learning Lecture 10 – Question Answering](https://youtube.com/watch?v=yIdF-17HwSk)                           | Christopher Manning                                                                    | 2019 |
+| :newspaper: Paper    | [Reading Wikipedia to Answer Open-Domain Questions](https://arxiv.org/abs/1704.00051)                                                        | Danqi Chen, Adam Fisch, Jason Weston, Antoine Bordes                                   | 2017 |
+| :newspaper: Paper    | [Neural Reading Comprehension and Beyond](https://cs.stanford.edu/people/danqi/papers/thesis.pdf)                                            | Danqi Chen                                                                             | 2018 |
+| :newspaper: Paper    | [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805)                         | Jacob Devlin, Ming-Wei Chang, Kenton Lee, Kristina Toutanova                           | 2018 |
+| :newspaper: Paper    | [Contextual Word Representations: A Contextual Introduction](https://arxiv.org/abs/1902.06006)                                               | Noah A. Smith                                                                          | 2019 |
+| :newspaper: Paper    | [End-to-End Open-Domain Question Answering with BERTserini](https://arxiv.org/abs/1902.01718)                                                | Wei Yang, Yuqing Xie, Aileen Lin, Xingyu Li, Luchen Tan, Kun Xiong, Ming Li, Jimmy Lin | 2019 |
+| :newspaper: Paper    | [Data Augmentation for BERT Fine-Tuning in Open-Domain Question Answering](https://arxiv.org/abs/1904.06652)                                 | Wei Yang, Yuqing Xie, Luchen Tan, Kun Xiong, Ming Li, Jimmy Lin                        | 2019 |
+| :newspaper: Paper    | [Passage Re-ranking with BERT](https://arxiv.org/abs/1901.04085)                                                                             | Rodrigo Nogueira, Kyunghyun Cho                                                        | 2019 |
+| :newspaper: Paper    | [MRQA: Machine Reading for Question Answering](https://mrqa.github.io/)                                                                      | Jonathan Berant, Percy Liang, Luke Zettlemoyer                                         | 2019 |
+| :newspaper: Paper    | [Unsupervised Question Answering by Cloze Translation](https://arxiv.org/abs/1906.04980)                                                     | Patrick Lewis, Ludovic Denoyer, Sebastian Riedel                                       | 2019 |
+| :computer: Framework | [Scikit-learn: Machine Learning in Python](http://jmlr.csail.mit.edu/papers/v12/pedregosa11a.html)                                           | Pedregosa et al.                                                                       | 2011 |
+| :computer: Framework | [PyTorch](https://arxiv.org/abs/1906.04980)                                                                                                  | Adam Paszke, Sam Gross, Soumith Chintala, Gregory Chanan                               | 2016 |
+| :computer: Framework | [PyTorch Pretrained BERT: The Big & Extending Repository of pretrained Transformers](https://github.com/huggingface/pytorch-pretrained-BERT) | Hugging Face                                                                           | 2018 |
 
 ## LICENSE
 
