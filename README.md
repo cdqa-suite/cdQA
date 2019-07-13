@@ -125,7 +125,7 @@ In order to evaluate models on your custom dataset you will need to annotate it.
 1. Convert your pandas DataFrame into a json file with SQuAD format:
 
     ```python
-    from cdqa.utils.converter import df2squad
+    from cdqa.utils.converters import df2squad
 
     json_data = df2squad(df=df, squad_version='v1.1', output_dir='.', filename='dataset-name')
     ```

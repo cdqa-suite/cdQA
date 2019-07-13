@@ -148,7 +148,7 @@ class QAPipeline(BaseEstimator):
         ''' Send reader to CPU if device=='cpu' or to GPU if device=='cuda'
         '''
         if device not in ('cpu', 'cuda'):
-            raise ValueError("Attribure device should be 'cpu' or 'cuda'.")
+            raise ValueError("Attribute device should be 'cpu' or 'cuda'.")
 
         self.reader.model.to(device)
         self.reader.device = torch.device(device)
