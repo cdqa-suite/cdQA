@@ -94,9 +94,10 @@ Fit the pipeline on your corpus using the pre-trained reader:
 
 ```python
 import pandas as pd
+from ast import literal_eval
 from cdqa.pipeline.cdqa_sklearn import QAPipeline
 
-df = pd.read_csv('your-custom-corpus-here.csv')
+df = pd.read_csv('your-custom-corpus-here.csv', converters={'paragraphs': literal_eval})
 
 cdqa_pipeline = QAPipeline(model='bert_qa_vCPU-sklearn.joblib')
 cdqa_pipeline.fit(X=df)
