@@ -42,7 +42,9 @@ class SquadExample(object):
                  orig_answer_text=None,
                  start_position=None,
                  end_position=None,
-                 is_impossible=None):
+                 is_impossible=None,
+                 paragraph=None,
+                 title=None):
         self.qas_id = qas_id
         self.question_text = question_text
         self.doc_tokens = doc_tokens
@@ -50,6 +52,8 @@ class SquadExample(object):
         self.start_position = start_position
         self.end_position = end_position
         self.is_impossible = is_impossible
+        self.paragraph = paragraph
+        self.title = title
 
     def __str__(self):
         return self.__repr__()
@@ -101,8 +105,12 @@ class InputFeatures(object):
 
 def read_squad_examples(input_file, is_training, version_2_with_negative):
     """Read a SQuAD json file into a list of SquadExample."""
-    with open(input_file, "r", encoding='utf-8') as reader:
-        input_data = json.load(reader)["data"]
+
+    if isinstance(input_file, str):
+        with open(input_file, "r", encoding='utf-8') as reader:
+            input_data = json.load(reader)["data"]
+    else:
+        input_data = input_file
 
     def is_whitespace(c):
         if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
@@ -172,13 +180,15 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                     orig_answer_text=orig_answer_text,
                     start_position=start_position,
                     end_position=end_position,
-                    is_impossible=is_impossible)
+                    is_impossible=is_impossible,
+                    paragraph=paragraph_text,
+                    title=entry["title"])
                 examples.append(example)
     return examples
 
 
 def convert_examples_to_features(examples, tokenizer, max_seq_length,
-                                 doc_stride, max_query_length, is_training):
+                                 doc_stride, max_query_length, is_training, verbose):
     """Loads a data file into a list of `InputBatch`s."""
 
     unique_id = 1000000000
@@ -296,7 +306,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
             if is_training and example.is_impossible:
                 start_position = 0
                 end_position = 0
-            if example_index < 20:
+            if example_index < 20 and verbose:
                 logger.info("*** Example ***")
                 logger.info("unique_id: %s" % (unique_id))
                 logger.info("example_index: %s" % (example_index))
@@ -423,8 +433,10 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
                       output_nbest_file, output_null_log_odds_file, verbose_logging,
                       version_2_with_negative, null_score_diff_threshold):
     """Write final predictions to the json file and log-odds of null if needed."""
-    logger.info("Writing predictions to: %s" % (output_prediction_file))
-    logger.info("Writing nbest to: %s" % (output_nbest_file))
+    
+    if verbose_logging:
+        logger.info("Writing predictions to: %s" % (output_prediction_file))
+        logger.info("Writing nbest to: %s" % (output_nbest_file))
 
     example_index_to_features = collections.defaultdict(list)
     for feature in all_features:
@@ -441,6 +453,7 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
     all_predictions = collections.OrderedDict()
     all_nbest_json = collections.OrderedDict()
     scores_diff_json = collections.OrderedDict()
+    final_predictions = collections.OrderedDict()
 
     for (example_index, example) in enumerate(all_examples):
         features = example_index_to_features[example_index]
@@ -599,17 +612,32 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
                 all_predictions[example.qas_id] = best_non_null_entry.text
         all_nbest_json[example.qas_id] = nbest_json
 
-    with open(output_prediction_file, "w") as writer:
-        writer.write(json.dumps(all_predictions, indent=4) + "\n")
+        final_predictions[example.qas_id] = nbest_json[0]
 
-    with open(output_nbest_file, "w") as writer:
-        writer.write(json.dumps(all_nbest_json, indent=4) + "\n")
+    final_predictions_sorted = collections.OrderedDict(sorted(final_predictions.items(),
+                                                              key=lambda item: item[1]['start_logit'] +
+                                                              item[1]['end_logit'],
+                                                              reverse=True))
 
-    if version_2_with_negative:
+    question_id = list(final_predictions_sorted.items())[0][0]
+    title = [e for e in all_examples if e.qas_id == question_id][0].title
+    paragraph = [e for e in all_examples if e.qas_id == question_id][0].paragraph
+
+    final_prediction = list(final_predictions_sorted.items())[0][1]['text'], title, paragraph
+
+    if output_prediction_file:
+        with open(output_prediction_file, "w") as writer:
+            writer.write(json.dumps(all_predictions, indent=4) + "\n")
+
+    if output_nbest_file:
+        with open(output_nbest_file, "w") as writer:
+            writer.write(json.dumps(all_nbest_json, indent=4) + "\n")
+
+    if version_2_with_negative and output_null_log_odds_file:
         with open(output_null_log_odds_file, "w") as writer:
             writer.write(json.dumps(scores_diff_json, indent=4) + "\n")
 
-    return all_predictions
+    return final_prediction, all_predictions, all_nbest_json, scores_diff_json
 
 
 def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
