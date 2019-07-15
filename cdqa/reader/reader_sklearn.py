@@ -326,8 +326,6 @@ class Reader(BaseEstimator):
             self.max_seq_length = max_seq_length
             self.doc_stride = doc_stride
             self.max_query_length = max_query_length
-            self.do_train = do_train
-            self.do_eval = do_eval
             self.evaluate_during_training = evaluate_during_training
             self.do_lower_case = do_lower_case
             self.per_gpu_train_batch_size = per_gpu_train_batch_size
@@ -396,22 +394,28 @@ class Reader(BaseEstimator):
                 break
         config_class, model_class, tokenizer_class = MODEL_CLASSES[self.model_type]
         config = config_class.from_pretrained(self.config_name if self.config_name else self.model_name)
-        tokenizer = tokenizer_class.from_pretrained(self.tokenizer_name if self.tokenizer_name else self.model_name, do_lower_case=self.do_lower_case)
-        model = model_class.from_pretrained(self.model_name, from_tf=bool('.ckpt' in self.model_name), config=config)
+        self.tokenizer = tokenizer_class.from_pretrained(self.tokenizer_name if self.tokenizer_name else self.model_name, do_lower_case=self.do_lower_case)
+        self.model = model_class.from_pretrained(self.model_name, from_tf=bool('.ckpt' in self.model_name), config=config)
 
         if self.local_rank == 0:
             torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
 
         # Distributed and parrallel training
-        model.to(self.device)
+        self.model.to(self.device)
         if self.local_rank != -1:
-            model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[self.local_rank],
+            self.model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[self.local_rank],
                                                             output_device=self.local_rank,
                                                             find_unused_parameters=True)
         elif self.n_gpu > 1:
-            model = torch.nn.DataParallel(model)
+            self.model = torch.nn.DataParallel(model)
 
         logger.info("Training/evaluation parameters %s", self)
+
+        if pretrained_model_path:
+            # Load a trained model and vocabulary that you have fine-tuned
+            self.model = model_class.from_pretrained(self.pretrained_model_path)
+            self.tokenizer = tokenizer_class.from_pretrained(self.pretrained_model_path)
+            self.model.to(self.device)
 
     def fit(self, X, y=None):
 
@@ -419,7 +423,7 @@ class Reader(BaseEstimator):
             raise ValueError("Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(self.output_dir))
 
         train_dataset = load_and_cache_examples(self, tokenizer, evaluate=False, output_examples=False)
-        global_step, tr_loss = train(self, train_dataset, model, tokenizer)
+        global_step, tr_loss = train(self, train_dataset, self.model, self.tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
 
         # Saving best-practices: if you use defaults names for the model, you can reload it using from_pretrained()
@@ -431,24 +435,19 @@ class Reader(BaseEstimator):
             logger.info("Saving model checkpoint to %s", self.output_dir)
             # Save a trained model, configuration and tokenizer using `save_pretrained()`.
             # They can then be reloaded using `from_pretrained()`
-            model_to_save = model.module if hasattr(model, 'module') else model  # Take care of distributed/parallel training
+            model_to_save = self.model.module if hasattr(self.model, 'module') else self.model  # Take care of distributed/parallel training
             model_to_save.save_pretrained(self.output_dir)
-            tokenizer.save_pretrained(self.output_dir)
+            self.tokenizer.save_pretrained(self.output_dir)
 
             # Good practice: save your training arguments together with the trained model
-            torch.save(self, os.path.join(self.output_dir, 'training_args.bin'))
-
-            # Load a trained model and vocabulary that you have fine-tuned
-            model = model_class.from_pretrained(self.output_dir)
-            tokenizer = tokenizer_class.from_pretrained(self.output_dir)
-            model.to(self.device)
+            torch.save(self.get_params(), os.path.join(self.output_dir, 'training_args.bin'))
 
         return self
 
     def predict(self, X):
 
         results = {}
-        if self.do_eval and self.local_rank in [-1, 0]:
+        if self.local_rank in [-1, 0]:
             checkpoints = [self.output_dir]
             if self.eval_all_checkpoints:
                 checkpoints = list(os.path.dirname(c) for c in sorted(glob.glob(self.output_dir + '/**/' + WEIGHTS_NAME, recursive=True)))
@@ -456,8 +455,8 @@ class Reader(BaseEstimator):
             logger.info("Evaluate the following checkpoints: %s", checkpoints)
             for checkpoint in checkpoints:
                 global_step = checkpoint.split('-')[-1] if len(checkpoints) > 1 else ""
-                model = model_class.from_pretrained(checkpoint)
-                model.to(self.device)
+                self.model = model_class.from_pretrained(checkpoint)
+                self.model.to(self.device)
                 result = evaluate(self, model, tokenizer, prefix=global_step)
                 result = dict((k + ('_{}'.format(global_step) if global_step else ''), v) for k, v in result.items())
                 results.update(result)
