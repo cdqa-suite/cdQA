@@ -45,6 +45,8 @@ from utils_squad import read_squad_examples, convert_examples_to_features, RawRe
 
 from utils_squad_evaluate import EVAL_OPTS, main as evaluate_on_squad
 
+from sklearn.base import BaseEstimator
+
 logger = logging.getLogger(__name__)
 
 ALL_MODELS = sum((tuple(conf.pretrained_config_archive_map.keys()) \
@@ -312,7 +314,8 @@ class Reader(BaseEstimator):
                  fp16=True,
                  fp16_opt_level='O1',
                  server_ip='',
-                 server_port=''):
+                 server_port='',
+                 pretrained_model_path=None):
 
             self.train_file = train_file
             self.predict_file = predict_file
@@ -353,6 +356,7 @@ class Reader(BaseEstimator):
             self.fp16_opt_level = fp16_opt_level
             self.server_ip = server_ip
             self.server_port = server_port
+            self.pretrained_model_path = pretrained_model_path
 
             # Setup distant debugging if needed
             if self.server_ip and self.server_port:
@@ -392,10 +396,10 @@ class Reader(BaseEstimator):
                 if key in self.model_name.lower():
                     self.model_type = key  # take the first match in model types
                     break
-            config_class, model_class, tokenizer_class = MODEL_CLASSES[self.model_type]
+            config_class, self.model_class, tokenizer_class = MODEL_CLASSES[self.model_type]
             config = config_class.from_pretrained(self.config_name if self.config_name else self.model_name)
             self.tokenizer = tokenizer_class.from_pretrained(self.tokenizer_name if self.tokenizer_name else self.model_name, do_lower_case=self.do_lower_case)
-            self.model = model_class.from_pretrained(self.model_name, from_tf=bool('.ckpt' in self.model_name), config=config)
+            self.model = self.model_class.from_pretrained(self.model_name, from_tf=bool('.ckpt' in self.model_name), config=config)
 
             if self.local_rank == 0:
                 torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
@@ -403,17 +407,17 @@ class Reader(BaseEstimator):
             # Distributed and parrallel training
             self.model.to(self.device)
             if self.local_rank != -1:
-                self.model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[self.local_rank],
+                self.model = torch.nn.parallel.DistributedDataParallel(self.model, device_ids=[self.local_rank],
                                                                 output_device=self.local_rank,
                                                                 find_unused_parameters=True)
             elif self.n_gpu > 1:
-                self.model = torch.nn.DataParallel(model)
+                self.model = torch.nn.DataParallel(self.model)
 
             logger.info("Training/evaluation parameters %s", self)
 
-            if pretrained_model_path:
+            if self.pretrained_model_path:
                 # Load a trained model and vocabulary that you have fine-tuned
-                self.model = model_class.from_pretrained(self.pretrained_model_path)
+                self.model = self.model_class.from_pretrained(self.pretrained_model_path)
                 self.tokenizer = tokenizer_class.from_pretrained(self.pretrained_model_path)
                 self.model.to(self.device)
 
@@ -422,7 +426,7 @@ class Reader(BaseEstimator):
         if os.path.exists(self.output_dir) and os.listdir(self.output_dir) and not self.overwrite_output_dir:
             raise ValueError("Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(self.output_dir))
 
-        train_dataset = load_and_cache_examples(self, tokenizer, evaluate=False, output_examples=False)
+        train_dataset = load_and_cache_examples(self, self.tokenizer, evaluate=False, output_examples=False)
         global_step, tr_loss = train(self, train_dataset, self.model, self.tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
 
@@ -444,7 +448,7 @@ class Reader(BaseEstimator):
 
         return self
 
-    def predict(self, X):
+    def evaluate(self, X):
 
         results = {}
         if self.local_rank in [-1, 0]:
@@ -455,10 +459,14 @@ class Reader(BaseEstimator):
             logger.info("Evaluate the following checkpoints: %s", checkpoints)
             for checkpoint in checkpoints:
                 global_step = checkpoint.split('-')[-1] if len(checkpoints) > 1 else ""
-                self.model = model_class.from_pretrained(checkpoint)
+                self.model = self.model_class.from_pretrained(checkpoint)
                 self.model.to(self.device)
-                result = evaluate(self, model, tokenizer, prefix=global_step)
+                result = evaluate(self, self.model, self.tokenizer, prefix=global_step)
                 result = dict((k + ('_{}'.format(global_step) if global_step else ''), v) for k, v in result.items())
                 results.update(result)
         logger.info("Results: {}".format(results))
         return results
+
+    def predict(self, X):
+
+        return ''
