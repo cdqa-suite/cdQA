@@ -647,6 +647,9 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
 
     final_prediction = list(final_predictions_sorted.items())[0][1]['text'], title, paragraph
 
+    best_logit = list(final_predictions_sorted.items())[0][1]['start_logit'] + \
+                 list(final_predictions_sorted.items())[0][1]['end_logit']
+
     if output_prediction_file:
         with open(output_prediction_file, "w") as writer:
             writer.write(json.dumps(all_predictions, indent=4) + "\n")
@@ -658,7 +661,7 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
         with open(output_null_log_odds_file, "w") as writer:
             writer.write(json.dumps(scores_diff_json, indent=4) + "\n")
 
-    return final_prediction, all_predictions, all_nbest_json, scores_diff_json
+    return final_prediction, all_predictions, all_nbest_json, scores_diff_json, best_logit
 
 
 def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
@@ -1179,7 +1182,7 @@ class BertQA(BaseEstimator):
 
         return self
 
-    def predict(self, X):
+    def predict(self, X, return_logit=False):
 
         eval_examples, eval_features = X
         if self.verbose_logging:
@@ -1230,7 +1233,8 @@ class BertQA(BaseEstimator):
             output_prediction_file = None
             output_nbest_file = None
             output_null_log_odds_file = None
-        final_prediction, all_predictions, all_nbest_json, scores_diff_json = write_predictions(
+        final_prediction, all_predictions, all_nbest_json, \
+         scores_diff_json, best_logit = write_predictions(
             eval_examples,
             eval_features,
             all_results,
@@ -1244,4 +1248,7 @@ class BertQA(BaseEstimator):
             self.version_2_with_negative,
             self.null_score_diff_threshold)
 
-        return final_prediction
+        if return_logit:
+            return (*final_prediction, best_logit)
+        else:
+            return final_prediction

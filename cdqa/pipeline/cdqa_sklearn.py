@@ -101,13 +101,16 @@ class QAPipeline(BaseEstimator):
 
         return self
 
-    def predict(self, X=None):
+    def predict(self, X=None, return_logit=False):
         """ Compute prediction of an answer to a question
 
         Parameters
         ----------
         X: str or list of strings
             Sample (question) or list of samples to perform a prediction on
+
+        return_logit: boolean
+            Whether to return logit of best answer or not. Default: False
 
         Returns
         -------
@@ -117,6 +120,9 @@ class QAPipeline(BaseEstimator):
         If X is list os strings
         predictions: list of tuples (answer, title, paragraph)
 
+        If return_logits is True, each prediction tuple will have the following
+        structure: (answer, title, paragraph, best logit)
+
         """
         if(isinstance(X, str)):
             closest_docs_indices = self.retriever.predict(X, metadata=self.metadata)
@@ -124,7 +130,7 @@ class QAPipeline(BaseEstimator):
                                                      closest_docs_indices=closest_docs_indices,
                                                      metadata=self.metadata)
             examples, features = self.processor_predict.fit_transform(X=squad_examples)
-            prediction = self.reader.predict((examples, features))
+            prediction = self.reader.predict((examples, features), return_logit)
             return prediction
 
         elif(isinstance(X, list)):
@@ -135,7 +141,7 @@ class QAPipeline(BaseEstimator):
                                                          closest_docs_indices=closest_docs_indices,
                                                          metadata=self.metadata)
                 examples, features = self.processor_predict.fit_transform(X=squad_examples)
-                pred = self.reader.predict((examples, features))
+                pred = self.reader.predict((examples, features), return_logit)
                 predictions.append(pred)
 
             return predictions
