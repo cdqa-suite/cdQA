@@ -354,68 +354,68 @@ class Reader(BaseEstimator):
             self.server_ip = server_ip
             self.server_port = server_port
 
-        # Setup distant debugging if needed
-        if self.server_ip and self.server_port:
-            # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
-            import ptvsd
-            print("Waiting for debugger attach")
-            ptvsd.enable_attach(address=(self.server_ip, self.server_port), redirect_output=True)
-            ptvsd.wait_for_attach()
+            # Setup distant debugging if needed
+            if self.server_ip and self.server_port:
+                # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
+                import ptvsd
+                print("Waiting for debugger attach")
+                ptvsd.enable_attach(address=(self.server_ip, self.server_port), redirect_output=True)
+                ptvsd.wait_for_attach()
 
-        # Setup CUDA, GPU & distributed training
-        if self.local_rank == -1 or self.no_cuda:
-            device = torch.device("cuda" if torch.cuda.is_available() and not self.no_cuda else "cpu")
-            self.n_gpu = torch.cuda.device_count()
-        else:  # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
-            torch.cuda.set_device(self.local_rank)
-            device = torch.device("cuda", self.local_rank)
-            torch.distributed.init_process_group(backend='nccl')
-            self.n_gpu = 1
-        self.device = device
+            # Setup CUDA, GPU & distributed training
+            if self.local_rank == -1 or self.no_cuda:
+                device = torch.device("cuda" if torch.cuda.is_available() and not self.no_cuda else "cpu")
+                self.n_gpu = torch.cuda.device_count()
+            else:  # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
+                torch.cuda.set_device(self.local_rank)
+                device = torch.device("cuda", self.local_rank)
+                torch.distributed.init_process_group(backend='nccl')
+                self.n_gpu = 1
+            self.device = device
 
-        # Setup logging
-        logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                            datefmt = '%m/%d/%Y %H:%M:%S',
-                            level = logging.INFO if self.local_rank in [-1, 0] else logging.WARN)
-        logger.warning("Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",
-                        self.local_rank, device, self.n_gpu, bool(self.local_rank != -1), self.fp16)
+            # Setup logging
+            logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                                datefmt = '%m/%d/%Y %H:%M:%S',
+                                level = logging.INFO if self.local_rank in [-1, 0] else logging.WARN)
+            logger.warning("Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",
+                            self.local_rank, device, self.n_gpu, bool(self.local_rank != -1), self.fp16)
 
-        # Set seed
-        set_seed(self)
+            # Set seed
+            set_seed(self)
 
-        # Load pretrained model and tokenizer
-        if self.local_rank not in [-1, 0]:
-            torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
+            # Load pretrained model and tokenizer
+            if self.local_rank not in [-1, 0]:
+                torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
 
-        self.model_type = ""
-        for key in MODEL_CLASSES:
-            if key in self.model_name.lower():
-                self.model_type = key  # take the first match in model types
-                break
-        config_class, model_class, tokenizer_class = MODEL_CLASSES[self.model_type]
-        config = config_class.from_pretrained(self.config_name if self.config_name else self.model_name)
-        self.tokenizer = tokenizer_class.from_pretrained(self.tokenizer_name if self.tokenizer_name else self.model_name, do_lower_case=self.do_lower_case)
-        self.model = model_class.from_pretrained(self.model_name, from_tf=bool('.ckpt' in self.model_name), config=config)
+            self.model_type = ""
+            for key in MODEL_CLASSES:
+                if key in self.model_name.lower():
+                    self.model_type = key  # take the first match in model types
+                    break
+            config_class, model_class, tokenizer_class = MODEL_CLASSES[self.model_type]
+            config = config_class.from_pretrained(self.config_name if self.config_name else self.model_name)
+            self.tokenizer = tokenizer_class.from_pretrained(self.tokenizer_name if self.tokenizer_name else self.model_name, do_lower_case=self.do_lower_case)
+            self.model = model_class.from_pretrained(self.model_name, from_tf=bool('.ckpt' in self.model_name), config=config)
 
-        if self.local_rank == 0:
-            torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
+            if self.local_rank == 0:
+                torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
 
-        # Distributed and parrallel training
-        self.model.to(self.device)
-        if self.local_rank != -1:
-            self.model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[self.local_rank],
-                                                            output_device=self.local_rank,
-                                                            find_unused_parameters=True)
-        elif self.n_gpu > 1:
-            self.model = torch.nn.DataParallel(model)
-
-        logger.info("Training/evaluation parameters %s", self)
-
-        if pretrained_model_path:
-            # Load a trained model and vocabulary that you have fine-tuned
-            self.model = model_class.from_pretrained(self.pretrained_model_path)
-            self.tokenizer = tokenizer_class.from_pretrained(self.pretrained_model_path)
+            # Distributed and parrallel training
             self.model.to(self.device)
+            if self.local_rank != -1:
+                self.model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[self.local_rank],
+                                                                output_device=self.local_rank,
+                                                                find_unused_parameters=True)
+            elif self.n_gpu > 1:
+                self.model = torch.nn.DataParallel(model)
+
+            logger.info("Training/evaluation parameters %s", self)
+
+            if pretrained_model_path:
+                # Load a trained model and vocabulary that you have fine-tuned
+                self.model = model_class.from_pretrained(self.pretrained_model_path)
+                self.tokenizer = tokenizer_class.from_pretrained(self.pretrained_model_path)
+                self.model.to(self.device)
 
     def fit(self, X, y=None):
 
