@@ -267,211 +267,199 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=Fal
     return dataset
 
 
-def main():
-    parser = argparse.ArgumentParser()
+class Reader(BaseEstimator):
+    """
+    """
 
-    ## Required parameters
-    parser.add_argument("--train_file", default=None, type=str, required=True,
-                        help="SQuAD json for training. E.g., train-v1.1.json")
-    parser.add_argument("--predict_file", default=None, type=str, required=True,
-                        help="SQuAD json for predictions. E.g., dev-v1.1.json or test-v1.1.json")
-    parser.add_argument("--model_name", default=None, type=str, required=True,
-                        help="Bert/XLNet/XLM pre-trained model selected in the list: " + ", ".join(ALL_MODELS))
-    parser.add_argument("--output_dir", default=None, type=str, required=True,
-                        help="The output directory where the model checkpoints and predictions will be written.")
+    def __init__(self,
+                 train_file=None,
+                 predict_file=None,
+                 model_name=None,
+                 output_dir=None,
+                 config_name="",
+                 tokenizer_name="",
+                 cache_dir="",
+                 version_2_with_negative=True,
+                 null_score_diff_threshold=0.0,
+                 max_seq_length=384,
+                 doc_stride=128,
+                 max_query_length=64,
+                 do_train=True,
+                 do_eval=True,
+                 evaluate_during_training=True,
+                 do_lower_case=True,
+                 per_gpu_train_batch_size=8,
+                 per_gpu_eval_batch_size=8,
+                 learning_rate=5e-5,
+                 gradient_accumulation_steps=1,
+                 weight_decay=0.0,
+                 adam_epsilon=1e-8,
+                 max_grad_norm=1.0,
+                 num_train_epochs=3.0,
+                 max_steps=-1,
+                 warmup_steps=0,
+                 n_best_size=20,
+                 max_answer_length=30,
+                 verbose_logging=True,
+                 logging_steps=50,
+                 save_steps=50,
+                 eval_all_checkpoints=True,
+                 no_cuda=True,
+                 overwrite_output_dir=True,
+                 overwrite_cache=True,
+                 seed=42,
+                 local_rank=-1,
+                 fp16=True,
+                 fp16_opt_level='O1',
+                 server_ip='',
+                 server_port=''):
 
-    ## Other parameters
-    parser.add_argument("--config_name", default="", type=str,
-                        help="Pretrained config name or path if not the same as model_name")
-    parser.add_argument("--tokenizer_name", default="", type=str,
-                        help="Pretrained tokenizer name or path if not the same as model_name")
-    parser.add_argument("--cache_dir", default="", type=str,
-                        help="Where do you want to store the pre-trained models downloaded from s3")
+            self.train_file = train_file
+            self.predict_file = predict_file
+            self.model_name = model_name
+            self.output_dir = output_dir
+            self.config_name = config_name
+            self.tokenizer_name = tokenizer_name
+            self.cache_dir = cache_dir
+            self.version_2_with_negative = version_2_with_negative
+            self.null_score_diff_threshold = null_score_diff_threshold
+            self.max_seq_length = max_seq_length
+            self.doc_stride = doc_stride
+            self.max_query_length = max_query_length
+            self.do_train = do_train
+            self.do_eval = do_eval
+            self.evaluate_during_training = evaluate_during_training
+            self.do_lower_case = do_lower_case
+            self.per_gpu_train_batch_size = per_gpu_train_batch_size
+            self.per_gpu_eval_batch_size = per_gpu_eval_batch_size
+            self.learning_rate = learning_rate
+            self.gradient_accumulation_steps = gradient_accumulation_steps
+            self.weight_decay = weight_decay
+            self.adam_epsilon = adam_epsilon
+            self.max_grad_norm = max_grad_norm
+            self.num_train_epochs = num_train_epochs
+            self.max_steps = max_steps
+            self.warmup_steps = warmup_steps
+            self.n_best_size = n_best_size
+            self.max_answer_length = max_answer_length
+            self.verbose_logging = verbose_logging
+            self.logging_steps = logging_steps
+            self.save_steps = save_steps
+            self.eval_all_checkpoints = eval_all_checkpoints
+            self.no_cuda = no_cuda
+            self.overwrite_output_dir = overwrite_output_dir
+            self.overwrite_cache = overwrite_cache
+            self.seed = seed
+            self.local_rank = local_rank
+            self.fp16 = fp16
+            self.fp16_opt_level = fp16_opt_level
+            self.server_ip = server_ip
+            self.server_port = server_port
 
-    parser.add_argument('--version_2_with_negative', action='store_true',
-                        help='If true, the SQuAD examples contain some that do not have an answer.')
-    parser.add_argument('--null_score_diff_threshold', type=float, default=0.0,
-                        help="If null_score - best_non_null is greater than the threshold predict null.")
+        # Setup distant debugging if needed
+        if self.server_ip and self.server_port:
+            # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
+            import ptvsd
+            print("Waiting for debugger attach")
+            ptvsd.enable_attach(address=(self.server_ip, self.server_port), redirect_output=True)
+            ptvsd.wait_for_attach()
 
-    parser.add_argument("--max_seq_length", default=384, type=int,
-                        help="The maximum total input sequence length after WordPiece tokenization. Sequences "
-                             "longer than this will be truncated, and sequences shorter than this will be padded.")
-    parser.add_argument("--doc_stride", default=128, type=int,
-                        help="When splitting up a long document into chunks, how much stride to take between chunks.")
-    parser.add_argument("--max_query_length", default=64, type=int,
-                        help="The maximum number of tokens for the question. Questions longer than this will "
-                             "be truncated to this length.")
-    parser.add_argument("--do_train", action='store_true',
-                        help="Whether to run training.")
-    parser.add_argument("--do_eval", action='store_true',
-                        help="Whether to run eval on the dev set.")
-    parser.add_argument("--evaluate_during_training", action='store_true',
-                        help="Rul evaluation during training at each logging step.")
-    parser.add_argument("--do_lower_case", action='store_true',
-                        help="Set this flag if you are using an uncased model.")
+        # Setup CUDA, GPU & distributed training
+        if self.local_rank == -1 or self.no_cuda:
+            device = torch.device("cuda" if torch.cuda.is_available() and not self.no_cuda else "cpu")
+            self.n_gpu = torch.cuda.device_count()
+        else:  # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
+            torch.cuda.set_device(self.local_rank)
+            device = torch.device("cuda", self.local_rank)
+            torch.distributed.init_process_group(backend='nccl')
+            self.n_gpu = 1
+        self.device = device
 
-    parser.add_argument("--per_gpu_train_batch_size", default=8, type=int,
-                        help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--per_gpu_eval_batch_size", default=8, type=int,
-                        help="Batch size per GPU/CPU for evaluation.")
-    parser.add_argument("--learning_rate", default=5e-5, type=float,
-                        help="The initial learning rate for Adam.")
-    parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
-                        help="Number of updates steps to accumulate before performing a backward/update pass.")
-    parser.add_argument("--weight_decay", default=0.0, type=float,
-                        help="Weight deay if we apply some.")
-    parser.add_argument("--adam_epsilon", default=1e-8, type=float,
-                        help="Epsilon for Adam optimizer.")
-    parser.add_argument("--max_grad_norm", default=1.0, type=float,
-                        help="Max gradient norm.")
-    parser.add_argument("--num_train_epochs", default=3.0, type=float,
-                        help="Total number of training epochs to perform.")
-    parser.add_argument("--max_steps", default=-1, type=int,
-                        help="If > 0: set total number of training steps to perform. Override num_train_epochs.")
-    parser.add_argument("--warmup_steps", default=0, type=int,
-                        help="Linear warmup over warmup_steps.")
-    parser.add_argument("--n_best_size", default=20, type=int,
-                        help="The total number of n-best predictions to generate in the nbest_predictions.json output file.")
-    parser.add_argument("--max_answer_length", default=30, type=int,
-                        help="The maximum length of an answer that can be generated. This is needed because the start "
-                             "and end predictions are not conditioned on one another.")
-    parser.add_argument("--verbose_logging", action='store_true',
-                        help="If true, all of the warnings related to data processing will be printed. "
-                             "A number of warnings are expected for a normal SQuAD evaluation.")
+        # Setup logging
+        logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                            datefmt = '%m/%d/%Y %H:%M:%S',
+                            level = logging.INFO if self.local_rank in [-1, 0] else logging.WARN)
+        logger.warning("Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",
+                        self.local_rank, device, self.n_gpu, bool(self.local_rank != -1), self.fp16)
 
-    parser.add_argument('--logging_steps', type=int, default=50,
-                        help="Log every X updates steps.")
-    parser.add_argument('--save_steps', type=int, default=50,
-                        help="Save checkpoint every X updates steps.")
-    parser.add_argument("--eval_all_checkpoints", action='store_true',
-                        help="Evaluate all checkpoints starting with the same prefix as model_name ending and ending with step number")
-    parser.add_argument("--no_cuda", action='store_true',
-                        help="Whether not to use CUDA when available")
-    parser.add_argument('--overwrite_output_dir', action='store_true',
-                        help="Overwrite the content of the output directory")
-    parser.add_argument('--overwrite_cache', action='store_true',
-                        help="Overwrite the cached training and evaluation sets")
-    parser.add_argument('--seed', type=int, default=42,
-                        help="random seed for initialization")
+        # Set seed
+        set_seed(self)
 
-    parser.add_argument("--local_rank", type=int, default=-1,
-                        help="local_rank for distributed training on gpus")
-    parser.add_argument('--fp16', action='store_true',
-                        help="Whether to use 16-bit (mixed) precision (through NVIDIA apex) instead of 32-bit")
-    parser.add_argument('--fp16_opt_level', type=str, default='O1',
-                        help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']."
-                             "See details at https://nvidia.github.io/apex/amp.html")
-    parser.add_argument('--server_ip', type=str, default='', help="Can be used for distant debugging.")
-    parser.add_argument('--server_port', type=str, default='', help="Can be used for distant debugging.")
-    args = parser.parse_args()
+        # Load pretrained model and tokenizer
+        if self.local_rank not in [-1, 0]:
+            torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
 
-    if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train and not args.overwrite_output_dir:
-        raise ValueError("Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(args.output_dir))
+        self.model_type = ""
+        for key in MODEL_CLASSES:
+            if key in self.model_name.lower():
+                self.model_type = key  # take the first match in model types
+                break
+        config_class, model_class, tokenizer_class = MODEL_CLASSES[self.model_type]
+        config = config_class.from_pretrained(self.config_name if self.config_name else self.model_name)
+        tokenizer = tokenizer_class.from_pretrained(self.tokenizer_name if self.tokenizer_name else self.model_name, do_lower_case=self.do_lower_case)
+        model = model_class.from_pretrained(self.model_name, from_tf=bool('.ckpt' in self.model_name), config=config)
 
-    # Setup distant debugging if needed
-    if args.server_ip and args.server_port:
-        # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
-        import ptvsd
-        print("Waiting for debugger attach")
-        ptvsd.enable_attach(address=(args.server_ip, args.server_port), redirect_output=True)
-        ptvsd.wait_for_attach()
+        if self.local_rank == 0:
+            torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
 
-    # Setup CUDA, GPU & distributed training
-    if args.local_rank == -1 or args.no_cuda:
-        device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
-        args.n_gpu = torch.cuda.device_count()
-    else:  # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
-        torch.cuda.set_device(args.local_rank)
-        device = torch.device("cuda", args.local_rank)
-        torch.distributed.init_process_group(backend='nccl')
-        args.n_gpu = 1
-    args.device = device
+        # Distributed and parrallel training
+        model.to(self.device)
+        if self.local_rank != -1:
+            model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[self.local_rank],
+                                                            output_device=self.local_rank,
+                                                            find_unused_parameters=True)
+        elif self.n_gpu > 1:
+            model = torch.nn.DataParallel(model)
 
-    # Setup logging
-    logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                        datefmt = '%m/%d/%Y %H:%M:%S',
-                        level = logging.INFO if args.local_rank in [-1, 0] else logging.WARN)
-    logger.warning("Process rank: %s, device: %s, n_gpu: %s, distributed training: %s, 16-bits training: %s",
-                    args.local_rank, device, args.n_gpu, bool(args.local_rank != -1), args.fp16)
+        logger.info("Training/evaluation parameters %s", self)
 
-    # Set seed
-    set_seed(args)
+    def fit(self, X, y=None):
 
-    # Load pretrained model and tokenizer
-    if args.local_rank not in [-1, 0]:
-        torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
+        if os.path.exists(self.output_dir) and os.listdir(self.output_dir) and not self.overwrite_output_dir:
+            raise ValueError("Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(self.output_dir))
 
-    args.model_type = ""
-    for key in MODEL_CLASSES:
-        if key in args.model_name.lower():
-            args.model_type = key  # take the first match in model types
-            break
-    config_class, model_class, tokenizer_class = MODEL_CLASSES[args.model_type]
-    config = config_class.from_pretrained(args.config_name if args.config_name else args.model_name)
-    tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name if args.tokenizer_name else args.model_name, do_lower_case=args.do_lower_case)
-    model = model_class.from_pretrained(args.model_name, from_tf=bool('.ckpt' in args.model_name), config=config)
-
-    if args.local_rank == 0:
-        torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
-
-    # Distributed and parrallel training
-    model.to(args.device)
-    if args.local_rank != -1:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank],
-                                                          output_device=args.local_rank,
-                                                          find_unused_parameters=True)
-    elif args.n_gpu > 1:
-        model = torch.nn.DataParallel(model)
-
-    logger.info("Training/evaluation parameters %s", args)
-
-    # Training
-    if args.do_train:
-        train_dataset = load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=False)
-        global_step, tr_loss = train(args, train_dataset, model, tokenizer)
+        train_dataset = load_and_cache_examples(self, tokenizer, evaluate=False, output_examples=False)
+        global_step, tr_loss = train(self, train_dataset, model, tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
 
+        # Saving best-practices: if you use defaults names for the model, you can reload it using from_pretrained()
+        if self.local_rank == -1 or torch.distributed.get_rank() == 0:
+            # Create output directory if needed
+            if not os.path.exists(self.output_dir) and self.local_rank in [-1, 0]:
+                os.makedirs(self.output_dir)
 
-    # Saving best-practices: if you use defaults names for the model, you can reload it using from_pretrained()
-    if args.local_rank == -1 or torch.distributed.get_rank() == 0:
-        # Create output directory if needed
-        if not os.path.exists(args.output_dir) and args.local_rank in [-1, 0]:
-            os.makedirs(args.output_dir)
+            logger.info("Saving model checkpoint to %s", self.output_dir)
+            # Save a trained model, configuration and tokenizer using `save_pretrained()`.
+            # They can then be reloaded using `from_pretrained()`
+            model_to_save = model.module if hasattr(model, 'module') else model  # Take care of distributed/parallel training
+            model_to_save.save_pretrained(self.output_dir)
+            tokenizer.save_pretrained(self.output_dir)
 
-        logger.info("Saving model checkpoint to %s", args.output_dir)
-        # Save a trained model, configuration and tokenizer using `save_pretrained()`.
-        # They can then be reloaded using `from_pretrained()`
-        model_to_save = model.module if hasattr(model, 'module') else model  # Take care of distributed/parallel training
-        model_to_save.save_pretrained(args.output_dir)
-        tokenizer.save_pretrained(args.output_dir)
+            # Good practice: save your training arguments together with the trained model
+            torch.save(self, os.path.join(self.output_dir, 'training_args.bin'))
 
-        # Good practice: save your training arguments together with the trained model
-        torch.save(args, os.path.join(args.output_dir, 'training_args.bin'))
+            # Load a trained model and vocabulary that you have fine-tuned
+            model = model_class.from_pretrained(self.output_dir)
+            tokenizer = tokenizer_class.from_pretrained(self.output_dir)
+            model.to(self.device)
 
-        # Load a trained model and vocabulary that you have fine-tuned
-        model = model_class.from_pretrained(args.output_dir)
-        tokenizer = tokenizer_class.from_pretrained(args.output_dir)
-        model.to(args.device)
+        return self
 
+    def predict(self, X):
 
-    # Evaluation
-    results = {}
-    if args.do_eval and args.local_rank in [-1, 0]:
-        checkpoints = [args.output_dir]
-        if args.eval_all_checkpoints:
-            checkpoints = list(os.path.dirname(c) for c in sorted(glob.glob(args.output_dir + '/**/' + WEIGHTS_NAME, recursive=True)))
-            logging.getLogger("pytorch_transformers.modeling_utils").setLevel(logging.WARN)  # Reduce logging
-        logger.info("Evaluate the following checkpoints: %s", checkpoints)
-        for checkpoint in checkpoints:
-            global_step = checkpoint.split('-')[-1] if len(checkpoints) > 1 else ""
-            model = model_class.from_pretrained(checkpoint)
-            model.to(args.device)
-            result = evaluate(args, model, tokenizer, prefix=global_step)
-            result = dict((k + ('_{}'.format(global_step) if global_step else ''), v) for k, v in result.items())
-            results.update(result)
-    logger.info("Results: {}".format(results))
-    return results
-
-
-if __name__ == "__main__":
-    main()
+        results = {}
+        if self.do_eval and self.local_rank in [-1, 0]:
+            checkpoints = [self.output_dir]
+            if self.eval_all_checkpoints:
+                checkpoints = list(os.path.dirname(c) for c in sorted(glob.glob(self.output_dir + '/**/' + WEIGHTS_NAME, recursive=True)))
+                logging.getLogger("pytorch_transformers.modeling_utils").setLevel(logging.WARN)  # Reduce logging
+            logger.info("Evaluate the following checkpoints: %s", checkpoints)
+            for checkpoint in checkpoints:
+                global_step = checkpoint.split('-')[-1] if len(checkpoints) > 1 else ""
+                model = model_class.from_pretrained(checkpoint)
+                model.to(self.device)
+                result = evaluate(self, model, tokenizer, prefix=global_step)
+                result = dict((k + ('_{}'.format(global_step) if global_step else ''), v) for k, v in result.items())
+                results.update(result)
+        logger.info("Results: {}".format(results))
+        return results
