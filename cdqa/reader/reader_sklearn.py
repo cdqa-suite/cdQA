@@ -357,7 +357,8 @@ class Reader(BaseEstimator):
 
             self.train_file = train_file
             self.predict_file = predict_file
-            self.model_name = model_name
+            self.model_type = model_type
+            self.model_name_or_path = model_name_or_path
             self.output_dir = output_dir
             self.config_name = config_name
             self.tokenizer_name = tokenizer_name
