@@ -5,6 +5,7 @@ pandas
 prettytable
 pytorch_pretrained_bert
 pytorch-transformers
+tensorboardX
 scikit_learn
 tika
 tqdm
