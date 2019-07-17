@@ -272,14 +272,14 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=Fal
     else:
         logger.info("Creating features from dataset file at %s", input_file)
         examples = read_squad_examples(input_file=input_file,
-                                       is_training=not evaluate,
+                                       is_training=not evaluate or not predict,
                                        version_2_with_negative=args.version_2_with_negative)
         features = convert_examples_to_features(examples=examples,
                                                 tokenizer=tokenizer,
                                                 max_seq_length=args.max_seq_length,
                                                 doc_stride=args.doc_stride,
                                                 max_query_length=args.max_query_length,
-                                                is_training=not evaluate)
+                                                is_training=not evaluate or not predict)
         if args.local_rank in [-1, 0]:
             logger.info("Saving features into cached file %s", cached_features_file)
             torch.save(features, cached_features_file)
@@ -579,6 +579,6 @@ class Reader(BaseEstimator):
 
     def predict(self, X):
 
-        result = predict(self, self.model, self.tokenizer)
+        out_eval, final_prediction = predict(self, self.model, self.tokenizer, prefix="")
 
-        return ''
+        return out_eval, final_prediction

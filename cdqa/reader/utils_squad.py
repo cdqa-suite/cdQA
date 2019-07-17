@@ -881,6 +881,8 @@ def write_predictions_extended(all_examples, all_features, all_results, n_best_s
 
     final_prediction = list(final_predictions_sorted.items())[0][1]['text'], title, paragraph
 
+    print(final_prediction)
+
     with open(output_prediction_file, "w") as writer:
         writer.write(json.dumps(all_predictions, indent=4) + "\n")
 
