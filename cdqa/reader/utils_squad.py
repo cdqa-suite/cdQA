@@ -903,7 +903,7 @@ def write_predictions_extended(all_examples, all_features, all_results, n_best_s
     exact_raw, f1_raw = get_raw_scores(orig_data, all_predictions)
     out_eval = {}
 
-    find_all_best_thresh_v2(out_eval, all_predictions, exact_raw, f1_raw, scores_diff_json, qid_to_has_ans)
+    # find_all_best_thresh_v2(out_eval, all_predictions, exact_raw, f1_raw, scores_diff_json, qid_to_has_ans)
 
     return out_eval, final_prediction
 
