@@ -262,7 +262,7 @@ def evaluate(args, model, tokenizer, prefix=""):
 def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=False):
     # Load data features from cache or dataset file
     input_file = args.predict_file if evaluate else args.train_file
-    cached_features_file = os.path.join(os.path.dirname(input_file) if isinstance(input_file, str) else 'temp', 'cached_{}_{}_{}'.format(
+    cached_features_file = os.path.join(os.path.dirname(input_file) if isinstance(input_file, str) else '', 'cached_{}_{}_{}'.format(
     'dev' if evaluate else 'train',
     list(filter(None, args.model_name_or_path.split('/'))).pop(),
     str(args.max_seq_length)))
