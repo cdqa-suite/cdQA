@@ -306,6 +306,72 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=Fal
     return dataset
 
 
+def predict(args, model, tokenizer, prefix=""):
+    dataset, examples, features = load_and_cache_examples(args, tokenizer, evaluate=True, output_examples=True)
+
+    if not os.path.exists(args.output_dir) and args.local_rank in [-1, 0]:
+        os.makedirs(args.output_dir)
+
+    args.eval_batch_size = args.per_gpu_eval_batch_size * max(1, args.n_gpu)
+    # Note that DistributedSampler samples randomly
+    eval_sampler = SequentialSampler(dataset) if args.local_rank == -1 else DistributedSampler(dataset)
+    eval_dataloader = DataLoader(dataset, sampler=eval_sampler, batch_size=args.eval_batch_size)
+
+    # Eval!
+    logger.info("***** Running evaluation {} *****".format(prefix))
+    logger.info("  Num examples = %d", len(dataset))
+    logger.info("  Batch size = %d", args.eval_batch_size)
+    all_results = []
+    for batch in tqdm(eval_dataloader, desc="Evaluating"):
+        model.eval()
+        batch = tuple(t.to(args.device) for t in batch)
+        with torch.no_grad():
+            inputs = {'input_ids':      batch[0],
+                      'token_type_ids': None if args.model_type == 'xlm' else batch[1],  # XLM don't use segment_ids
+                        'attention_mask': batch[2]}
+            example_indices = batch[3]
+            if args.model_type in ['xlnet', 'xlm']:
+                inputs.update({'cls_index': batch[4],
+                               'p_mask':    batch[5]})
+            outputs = model(**inputs)
+
+        for i, example_index in enumerate(example_indices):
+            eval_feature = features[example_index.item()]
+            unique_id = int(eval_feature.unique_id)
+            if args.model_type in ['xlnet', 'xlm']:
+                # XLNet uses a more complex post-processing procedure
+                result = RawResultExtended(unique_id            = unique_id,
+                                           start_top_log_probs  = to_list(outputs[0][i]),
+                                           start_top_index      = to_list(outputs[1][i]),
+                                           end_top_log_probs    = to_list(outputs[2][i]),
+                                           end_top_index        = to_list(outputs[3][i]),
+                                           cls_logits           = to_list(outputs[4][i]))
+            else:
+                result = RawResult(unique_id    = unique_id,
+                                   start_logits = to_list(outputs[0][i]),
+                                   end_logits   = to_list(outputs[1][i]))
+            all_results.append(result)
+    
+    # Compute predictions
+    output_prediction_file = os.path.join(args.output_dir, "predictions_{}.json".format(prefix))
+    output_nbest_file = os.path.join(args.output_dir, "nbest_predictions_{}.json".format(prefix))
+    output_null_log_odds_file = os.path.join(args.output_dir, "null_odds_{}.json".format(prefix))
+
+    if args.model_type in ['xlnet', 'xlm']:
+        # XLNet uses a more complex post-processing procedure
+        out_eval, final_prediction = write_predictions_extended(examples, features, all_results, args.n_best_size,
+                        args.max_answer_length, output_prediction_file,
+                        output_nbest_file, output_null_log_odds_file, args.predict_file,
+                        model.config.start_n_top, model.config.end_n_top,
+                        args.version_2_with_negative, tokenizer, args.verbose_logging)
+    else:
+        write_predictions(examples, features, all_results, args.n_best_size,
+                        args.max_answer_length, args.do_lower_case, output_prediction_file,
+                        output_nbest_file, output_null_log_odds_file, args.verbose_logging,
+                        args.version_2_with_negative, args.null_score_diff_threshold)
+
+    return out_eval, final_prediction
+
 class Reader(BaseEstimator):
     """
     """
@@ -512,5 +578,7 @@ class Reader(BaseEstimator):
         return results
 
     def predict(self, X):
+
+        result = predict(self, self.model, self.tokenizer)
 
         return ''

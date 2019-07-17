@@ -734,6 +734,7 @@ def write_predictions_extended(all_examples, all_features, all_results, n_best_s
     all_predictions = collections.OrderedDict()
     all_nbest_json = collections.OrderedDict()
     scores_diff_json = collections.OrderedDict()
+    final_predictions = collections.OrderedDict()
 
     for (example_index, example) in enumerate(all_examples):
         features = example_index_to_features[example_index]
@@ -867,6 +868,18 @@ def write_predictions_extended(all_examples, all_features, all_results, n_best_s
         all_predictions[example.qas_id] = best_non_null_entry.text
 
         all_nbest_json[example.qas_id] = nbest_json
+        final_predictions[example.qas_id] = nbest_json[0]
+
+    final_predictions_sorted = collections.OrderedDict(sorted(final_predictions.items(),
+                                                              key=lambda item: item[1]['start_log_prob'] +
+                                                              item[1]['end_log_prob'],
+                                                              reverse=True))
+
+    question_id = list(final_predictions_sorted.items())[0][0]
+    title = [e for e in all_examples if e.qas_id == question_id][0].title
+    paragraph = [e for e in all_examples if e.qas_id == question_id][0].paragraph
+
+    final_prediction = list(final_predictions_sorted.items())[0][1]['text'], title, paragraph
 
     with open(output_prediction_file, "w") as writer:
         writer.write(json.dumps(all_predictions, indent=4) + "\n")
@@ -889,7 +902,7 @@ def write_predictions_extended(all_examples, all_features, all_results, n_best_s
 
     find_all_best_thresh_v2(out_eval, all_predictions, exact_raw, f1_raw, scores_diff_json, qid_to_has_ans)
 
-    return out_eval
+    return out_eval, final_prediction
 
 
 def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
