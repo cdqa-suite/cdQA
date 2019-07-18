@@ -16,8 +16,10 @@ for squad_url in squad_urls:
 # cast Reader class with train params
 reader = Reader(model_type='xlnet',
                 model_name_or_path='xlnet-base-cased',
-                fp16=False,
-                output_dir='.')
+                output_dir='.',
+                evaluate_during_training=False,
+                no_cuda=True,
+                fp16=False)
 
 # train the model
 reader.fit(X='train-v2.0.json')

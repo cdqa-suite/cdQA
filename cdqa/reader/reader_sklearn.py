@@ -388,8 +388,6 @@ class Reader(BaseEstimator):
                  max_seq_length=384,
                  doc_stride=128,
                  max_query_length=64,
-                 do_train=True,
-                 do_eval=True,
                  evaluate_during_training=True,
                  do_lower_case=True,
                  per_gpu_train_batch_size=8,
