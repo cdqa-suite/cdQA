@@ -18,7 +18,7 @@ reader = Reader(model_type='xlnet',
                 model_name_or_path='xlnet-base-cased',
                 output_dir='.',
                 evaluate_during_training=False,
-                no_cuda=True,
+                no_cuda=False,
                 fp16=False)
 
 # train the model
