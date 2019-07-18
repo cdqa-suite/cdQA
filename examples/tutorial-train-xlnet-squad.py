@@ -14,15 +14,13 @@ for squad_url in squad_urls:
     wget.download(url=squad_url, out='.')
 
 # cast Reader class with train params
-reader = Reader(train_file='train-v2.0.json',
-                predict_file='dev-v2.0.json',
-                model_type='xlnet',
+reader = Reader(model_type='xlnet',
                 model_name_or_path='xlnet-base-cased',
                 fp16=False,
                 output_dir='.')
 
 # train the model
-reader.fit(X='')
+reader.fit(X='train-v2.0.json')
 
 # save GPU version locally
 joblib.dump(reader, os.path.join(reader.output_dir, 'xlnet_qa_vGPU.joblib'))
@@ -33,3 +31,6 @@ reader.device = torch.device('cpu')
 
 # save CPU it locally
 joblib.dump(reader, os.path.join(reader.output_dir, 'bert_qa_vCPU.joblib'))
+
+# evaluate the model
+reader.evaluate(X='dev-v2.0.json')

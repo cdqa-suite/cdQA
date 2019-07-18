@@ -187,8 +187,8 @@ def train(args, train_dataset, model, tokenizer):
     return global_step, tr_loss / global_step
 
 
-def evaluate(args, model, tokenizer, prefix=""):
-    dataset, examples, features = load_and_cache_examples(args, tokenizer, evaluate=True, output_examples=True)
+def evaluate(input_file, args, model, tokenizer, prefix=""):
+    dataset, examples, features = load_and_cache_examples(input_file, args, tokenizer, evaluate=True, output_examples=True)
 
     if not os.path.exists(args.output_dir) and args.local_rank in [-1, 0]:
         os.makedirs(args.output_dir)
@@ -260,9 +260,8 @@ def evaluate(args, model, tokenizer, prefix=""):
     return results
 
 
-def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=False):
+def load_and_cache_examples(input_file, args, tokenizer, evaluate=False, output_examples=False):
     # Load data features from cache or dataset file
-    input_file = args.predict_file if evaluate else args.train_file
     cached_features_file = os.path.join(os.path.dirname(input_file) if isinstance(input_file, str) else '', 'cached_{}_{}_{}'.format(
     'dev' if evaluate else 'train',
     list(filter(None, args.model_name_or_path.split('/'))).pop(),
@@ -307,8 +306,8 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=Fal
     return dataset
 
 
-def predict(args, model, tokenizer, prefix=""):
-    dataset, examples, features = load_and_cache_examples(args, tokenizer, evaluate=True, output_examples=True)
+def predict(input_file, args, model, tokenizer, prefix=""):
+    dataset, examples, features = load_and_cache_examples(input_file, args, tokenizer, evaluate=True, output_examples=True)
 
     if not os.path.exists(args.output_dir) and args.local_rank in [-1, 0]:
         os.makedirs(args.output_dir)
@@ -378,8 +377,6 @@ class Reader(BaseEstimator):
     """
 
     def __init__(self,
-                 train_file=None,
-                 predict_file=None,
                  model_type=None,
                  model_name_or_path=None,
                  output_dir=None,
@@ -422,8 +419,6 @@ class Reader(BaseEstimator):
                  server_port='',
                  pretrained_model_path=None):
 
-            self.train_file = train_file
-            self.predict_file = predict_file
             self.model_type = model_type
             self.model_name_or_path = model_name_or_path
             self.output_dir = output_dir
@@ -528,7 +523,7 @@ class Reader(BaseEstimator):
         if os.path.exists(self.output_dir) and os.listdir(self.output_dir) and not self.overwrite_output_dir:
             raise ValueError("Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(self.output_dir))
 
-        train_dataset = load_and_cache_examples(self, self.tokenizer, evaluate=False, output_examples=False)
+        train_dataset = load_and_cache_examples(input_file=X, args=self, tokenizer=self.tokenizer, evaluate=False, output_examples=False)
         global_step, tr_loss = train(self, train_dataset, self.model, self.tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
 
@@ -569,7 +564,7 @@ class Reader(BaseEstimator):
                 self.model.to(self.device)
 
                 # Evaluate
-                result = evaluate(self, self.model, self.tokenizer, prefix=global_step)
+                result = evaluate(input_file=X, args=self, model=self.model, tokenizer=self.tokenizer, prefix=global_step)
                 
                 result = dict((k + ('_{}'.format(global_step) if global_step else ''), v) for k, v in result.items())
                 results.update(result)
@@ -580,6 +575,6 @@ class Reader(BaseEstimator):
 
     def predict(self, X):
 
-        out_eval, final_prediction = predict(self, self.model, self.tokenizer, prefix="")
+        out_eval, final_prediction = predict(input_file=X, args=self, model=self.model, tokenizer=self.tokenizer, prefix="")
 
         return out_eval, final_prediction
