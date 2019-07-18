@@ -243,7 +243,7 @@ def evaluate(input_file, args, model, tokenizer, prefix=""):
         # XLNet uses a more complex post-processing procedure
         write_predictions_extended(examples, features, all_results, args.n_best_size,
                         args.max_answer_length, output_prediction_file,
-                        output_nbest_file, output_null_log_odds_file, args.predict_file,
+                        output_nbest_file, output_null_log_odds_file, input_file,
                         model.config.start_n_top, model.config.end_n_top,
                         args.version_2_with_negative, tokenizer, args.verbose_logging)
     else:
@@ -253,7 +253,7 @@ def evaluate(input_file, args, model, tokenizer, prefix=""):
                         args.version_2_with_negative, args.null_score_diff_threshold)
 
     # Evaluate with the official SQuAD script
-    evaluate_options = EVAL_OPTS(data_file=args.predict_file,
+    evaluate_options = EVAL_OPTS(data_file=input_file,
                                  pred_file=output_prediction_file,
                                  na_prob_file=output_null_log_odds_file)
     results = evaluate_on_squad(evaluate_options)
@@ -361,7 +361,7 @@ def predict(input_file, args, model, tokenizer, prefix=""):
         # XLNet uses a more complex post-processing procedure
         out_eval, final_prediction = write_predictions_extended(examples, features, all_results, args.n_best_size,
                         args.max_answer_length, output_prediction_file,
-                        output_nbest_file, output_null_log_odds_file, args.predict_file,
+                        output_nbest_file, output_null_log_odds_file, input_file,
                         model.config.start_n_top, model.config.end_n_top,
                         args.version_2_with_negative, tokenizer, args.verbose_logging)
     else:

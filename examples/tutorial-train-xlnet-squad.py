@@ -30,7 +30,7 @@ reader.model.to('cpu')
 reader.device = torch.device('cpu')
 
 # save CPU it locally
-joblib.dump(reader, os.path.join(reader.output_dir, 'bert_qa_vCPU.joblib'))
+joblib.dump(reader, os.path.join(reader.output_dir, 'xlnet_qa_vCPU.joblib'))
 
 # evaluate the model
-reader.evaluate(X='dev-v2.0.json')
+out_eval, final_prediction = reader.evaluate(X='dev-v2.0.json')
