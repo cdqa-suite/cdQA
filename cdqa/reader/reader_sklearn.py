@@ -513,7 +513,7 @@ class Reader(BaseEstimator):
             if self.pretrained_model_path:
                 # Load a trained model and vocabulary that you have fine-tuned
                 self.model = self.model_class.from_pretrained(self.pretrained_model_path)
-                self.tokenizer = tokenizer_class.from_pretrained(self.pretrained_model_path)
+                # self.tokenizer = tokenizer_class.from_pretrained(self.pretrained_model_path)
                 self.model.to(self.device)
 
     def fit(self, X, y=None):
