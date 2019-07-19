@@ -25,9 +25,9 @@ def fit_retriever():
 def fit_reader():
 
     cdqa_pipeline = fit_retriever()
-    cdqa_pipeline.fit_reader(X='data/dev-v2.0-small.json')
     wget.download(url='https://raw.githubusercontent.com/huggingface/pytorch-transformers/master/examples/tests_samples/SQUAD/dev-v2.0-small.json',
                   out='data')
+    cdqa_pipeline.fit_reader(X='data/dev-v2.0-small.json')
     return cdqa_pipeline
 
 
