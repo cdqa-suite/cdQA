@@ -70,7 +70,7 @@ To use `cdQA` you need to create a pandas dataframe with the following columns:
 
 #### With converters
 
-The objective of `cdqa` converters to to make it easy to create this dataframe from your raw documents database. For instance the `pdf_converter` can create a `cdqa` dataframe from a directory containing `.pdf` files:
+The objective of `cdqa` converters is to make it easy to create this dataframe from your raw documents database. For instance the `pdf_converter` can create a `cdqa` dataframe from a directory containing `.pdf` files:
 
 ```python
 from cdqa.utils.converters import pdf_converter
