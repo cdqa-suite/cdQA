@@ -5,7 +5,6 @@ install:
   - pip install codecov pytest-cov
   - pip install --quiet .
 script:
-  - python download.py
   - pytest --cov=cdqa tests/
 deploy:
   provider: pypi

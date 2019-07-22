@@ -3,11 +3,14 @@ from ast import literal_eval
 import pandas as pd
 
 from cdqa.utils.filters import filter_paragraphs
+from cdqa.utils.download import *
 from cdqa.pipeline.cdqa_sklearn import QAPipeline
 
 
 def execute_pipeline(query):
-    df = pd.read_csv('data/bnpp_newsroom_v1.1/bnpp_newsroom-v1.1.csv',
+    download_bnpp_data('./data/bnpp_newsroom_v1.1/')
+    download_model('bert-squad_1.1', dir='./models')
+    df = pd.read_csv('./data/bnpp_newsroom_v1.1/bnpp_newsroom-v1.1.csv',
                      converters={'paragraphs': literal_eval})
     df = filter_paragraphs(df)
 

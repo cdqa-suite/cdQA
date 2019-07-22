@@ -80,12 +80,21 @@ df = pdf_converter(directory_path='path_to_pdf_folder')
 
 You will need to install [Java OpenJDK](https://openjdk.java.net/install/) to use this converter. We plan to improve and add more converters in the future. Stay tuned!
 
-### Downloading pre-trained models
+### Downloading pre-trained models and data
 
-You can download the models manually from the GitHub [releases](https://github.com/cdqa-suite/cdQA/releases) or use our download script:
+You can download the models and data manually from the GitHub [releases](https://github.com/cdqa-suite/cdQA/releases) or use our download functions:
 
 ```shell
-python download.py
+from cdqa.utils.download import download_squad, download_model, download_bnpp_data
+
+directory = 'path-to-directory'
+
+# Downloading data
+download_squad(dir=directory)
+download_bnpp_data(dir=directory)
+
+# Downloading pre-trained BERT fine-tuned on SQuAD 1.1
+download_model('bert-squad_1.1', dir=directory)
 ```
 
 ### Training models
