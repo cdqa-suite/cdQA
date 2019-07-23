@@ -807,6 +807,7 @@ class BertProcessor(BaseEstimator, TransformerMixin):
         bert-base-multilingual-cased, bert-base-chinese.
     do_lower_case : bool, optional
         Whether to lower case the input text. True for uncased models, False for cased models.
+        Default: True
     is_training : bool, optional
         Whether you are in training phase.
     version_2_with_negative : bool, optional
@@ -839,7 +840,7 @@ class BertProcessor(BaseEstimator, TransformerMixin):
 
     def __init__(self,
                  bert_model='bert-base-uncased',
-                 do_lower_case=False,
+                 do_lower_case=True,
                  is_training=False,
                  version_2_with_negative=False,
                  max_seq_length=384,
