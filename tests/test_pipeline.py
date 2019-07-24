@@ -16,8 +16,7 @@ def execute_pipeline(query):
 
     cdqa_pipeline = QAPipeline(
         reader='models/bert_qa_vCPU-sklearn.joblib')
-    cdqa_pipeline.fit(X=df)
-    cdqa_pipeline.reader.output_dir = None
+    cdqa_pipeline.fit_retriever(X=df)
 
     prediction = cdqa_pipeline.predict(X=query)
 
