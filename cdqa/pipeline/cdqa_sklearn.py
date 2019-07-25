@@ -1,4 +1,5 @@
 import joblib
+import warnings
 
 import pandas as pd
 import numpy as np
@@ -33,13 +34,13 @@ class QAPipeline(BaseEstimator):
     --------
     >>> from cdqa.pipeline.qa_pipeline import QAPipeline
     >>> qa_pipeline = QAPipeline(reader='bert_qa_squad_vCPU-sklearn.joblib')
-    >>> qa_pipeline.fit(X=df)
+    >>> qa_pipeline.fit_retriever(X=df)
     >>> prediction = qa_pipeline.predict(X='When BNP Paribas was created?')
 
     >>> from cdqa.pipeline.qa_pipeline import QAPipeline
     >>> qa_pipeline = QAPipeline()
     >>> qa_pipeline.fit_reader('train-v1.1.json')
-    >>> qa_pipeline.fit(X=df)
+    >>> qa_pipeline.fit_retriever(X=df)
     >>> prediction = qa_pipeline.predict(X='When BNP Paribas was created?')
 
     """
@@ -74,11 +75,35 @@ class QAPipeline(BaseEstimator):
     def fit(self, X=None, y=None):
         """ Fit the QAPipeline retriever to a list of documents in a dataframe.
 
+        This function is deprecated and will be removed in a future version of cdQA,
+        please use fit_retriever instead.
+
         Parameters
         ----------
         X: pandas.Dataframe
             Dataframe with the following columns: "title", "paragraphs"
 
+        """
+
+        warnings.warn(
+        "This function is deprecated and will be removed in a future version of cdQA, \
+        please use fit_retriever instead",
+        DeprecationWarning
+        )
+
+        self.metadata = X
+        self.metadata['content'] = self.metadata['paragraphs'].apply(lambda x: ' '.join(x))
+        self.retriever.fit(self.metadata['content'])
+
+        return self
+
+
+    def fit_retriever(self, X=None, y=None):
+        """ Fit the QAPipeline retriever to a list of documents in a dataframe.
+         Parameters
+        ----------
+        X: pandas.Dataframe
+            Dataframe with the following columns: "title", "paragraphs"
         """
 
         self.metadata = X
@@ -87,12 +112,14 @@ class QAPipeline(BaseEstimator):
 
         return self
 
+
     def fit_reader(self, X=None, y=None):
-        """Train the reader (BertQA instance) of QAPipeline object
+        """ Fit the QAPipeline retriever to a list of documents in a dataframe.
 
         Parameters
         ----------
-        X = path to json file in SQUAD format
+        X: pandas.Dataframe
+            Dataframe with the following columns: "title", "paragraphs"
 
         """
 

@@ -109,7 +109,7 @@ from cdqa.pipeline.cdqa_sklearn import QAPipeline
 df = pd.read_csv('your-custom-corpus-here.csv', converters={'paragraphs': literal_eval})
 
 cdqa_pipeline = QAPipeline(model='bert_qa_vCPU-sklearn.joblib')
-cdqa_pipeline.fit(X=df)
+cdqa_pipeline.fit_retriever(X=df)
 ```
 
 If you want to fine-tune the reader on your custom SQuAD-like annotated dataset:
