@@ -108,13 +108,17 @@ def pdf_converter(directory_path):
     list_pdf = os.listdir(directory_path)
     df = pd.DataFrame(columns=['title', 'paragraphs'])
     for i, pdf in enumerate(list_pdf):
-        df.loc[i] = [pdf, None]
-        raw = parser.from_file(os.path.join(directory_path,pdf))
-        s = raw['content']
-        paragraphs = re.split(u'\n(?=\u2028|[A-Z-0-9])', s)
-        list_par = []
-        for p in paragraphs:
-            if len(p) >= 200:
-                list_par.append(p.replace('\n', ''))
-            df.loc[i, 'paragraphs'] = list_par
+        try:
+            df.loc[i] = [pdf, None]
+            raw = parser.from_file(os.path.join(directory_path,pdf))
+            s = raw['content']
+            paragraphs = re.split(u'\n(?=\u2028|[A-Z-0-9])', s)
+            list_par = []
+            for p in paragraphs:
+                if len(p) >= 200:
+                    list_par.append(p.replace('\n', ''))
+                df.loc[i, 'paragraphs'] = list_par
+        except:
+            print("Unexpected error:", sys.exc_info()[0])
+            print("Unable to process file {}".format(pdf))
     return df
