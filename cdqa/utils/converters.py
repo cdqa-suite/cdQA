@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import sys
 from tqdm import tqdm
 from tika import parser
 import pandas as pd
