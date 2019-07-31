@@ -846,7 +846,8 @@ class BertProcessor(BaseEstimator, TransformerMixin):
                  max_seq_length=384,
                  doc_stride=128,
                  max_query_length=64,
-                 verbose=False):
+                 verbose=False,
+                 tokenizer=None):
 
         self.bert_model = bert_model
         self.do_lower_case = do_lower_case
@@ -856,20 +857,23 @@ class BertProcessor(BaseEstimator, TransformerMixin):
         self.doc_stride = doc_stride
         self.max_query_length = max_query_length
         self.verbose = verbose
+        self.tokenizer = tokenizer
 
     def fit(self, X, y=None):
         return self
 
     def transform(self, X):
-
-        tokenizer = BertTokenizer.from_pretrained(self.bert_model, do_lower_case=self.do_lower_case)
+        if self.tokenizer is None:
+            self.tokenizer = BertTokenizer.from_pretrained(self.bert_model, do_lower_case=self.do_lower_case)
+        else:
+            logger.info("loading tokenizer with custom vocabulary")
 
         examples = read_squad_examples(
             input_file=X, is_training=self.is_training, version_2_with_negative=self.version_2_with_negative)
 
         features = convert_examples_to_features(
             examples=examples,
-            tokenizer=tokenizer,
+            tokenizer=self.tokenizer,
             max_seq_length=self.max_seq_length,
             doc_stride=self.doc_stride,
             max_query_length=self.max_query_length,
