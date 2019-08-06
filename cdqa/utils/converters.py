@@ -146,7 +146,7 @@ def strip_tags(html):
     return s.get_data()
 
 def md_converter(directory_path):
-    """Get all markdown, convert them to html and put them in a pandas dataframe with columns ['title', 'paragraphs']"""
+    """Get all md, convert them to html and create the pandas dataframe with columns ['title', 'paragraphs']"""
     dict_doc = {'title': [], 'paragraphs': []}
     for md_file in Path(directory_path).glob('**/*.md'):
         md_file = str(md_file)
@@ -156,13 +156,13 @@ def md_converter(directory_path):
                 dict_doc['title'].append(filename)
                 md_text = f.read()
                 html_text = markdown.markdown(md_text)
-                clean_text_list = list(filter(None, html_text.split("<p>")))
-                for i in range(len(clean_text_list)):
-                    clean_text_list[i] = strip_tags(clean_text_list[i]).replace("\n", " ").lstrip().rstrip()
-                clean_text_list = list(filter(None, clean_text_list))
+                html_text_list = list(html_text.split("<p>"))
+                for i in range(len(html_text_list)):
+                    html_text_list[i] = strip_tags(html_text_list[i]).replace("\n", " ").lstrip().rstrip()
+                clean_text_list = list(filter(None, html_text_list))
                 dict_doc['paragraphs'].append(clean_text_list)
         except:
             print("Unexpected error:", sys.exc_info()[0])
-            print("Unable to process file {}".format(pdf))
+            print("Unable to process file {}".format(filename))
     df = pd.DataFrame.from_dict(dict_doc)
     return df
