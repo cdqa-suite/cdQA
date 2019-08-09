@@ -140,7 +140,7 @@ def train(args, train_dataset, model, tokenizer):
                       'end_positions':   batch[4]}
             if args.model_type in ['xlnet', 'xlm']:
                 inputs.update({'cls_index': batch[5],
-                               'p_mask':    batch[6]})
+                               'p_mask':       batch[6]})
             outputs = model(**inputs)
             loss = outputs[0]  # model outputs are always tuple in pytorch-transformers (see doc)
 
@@ -274,6 +274,9 @@ def evaluate(input_file, args, model, tokenizer, prefix=""):
 
 
 def load_and_cache_examples(input_file, args, tokenizer, evaluate=False, output_examples=False):
+    if args.local_rank not in [-1, 0]:
+        torch.distributed.barrier()  # Make sure only the first process in distributed training process the dataset, and the others will use the cache
+
     # Load data features from cache or dataset file
     cached_features_file = os.path.join(os.path.dirname(input_file) if isinstance(input_file, str) else '', 'cached_{}_{}_{}'.format(
     'dev' if evaluate else 'train',
@@ -296,6 +299,9 @@ def load_and_cache_examples(input_file, args, tokenizer, evaluate=False, output_
         if args.local_rank in [-1, 0]:
             logger.info("Saving features into cached file %s", cached_features_file)
             torch.save(features, cached_features_file)
+
+    if args.local_rank == 0:
+        torch.distributed.barrier()  # Make sure only the first process in distributed training process the dataset, and the others will use the cache
 
     # Convert to Tensors and build dataset
     all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
