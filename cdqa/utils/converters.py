@@ -108,7 +108,11 @@ def generate_squad_examples(question, closest_docs_indices, metadata):
     return squad_examples
 
 def pdf_converter(directory_path):
-    list_pdf = os.listdir(directory_path)
+    list_file = os.listdir(directory_path)
+    list_pdf = []
+    for file in list_file:
+        if file.endswith('pdf'):
+            list_pdf.append(file)
     df = pd.DataFrame(columns=['title', 'paragraphs'])
     for i, pdf in enumerate(list_pdf):
         try:
