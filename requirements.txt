@@ -6,5 +6,6 @@ prettytable
 pytorch_pretrained_bert
 scikit_learn
 tika
+markdown
 tqdm
 wget

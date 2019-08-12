@@ -6,7 +6,9 @@ from tqdm import tqdm
 from tika import parser
 import pandas as pd
 import uuid
-
+import markdown
+from pathlib import Path
+from html.parser import HTMLParser
 
 def df2squad(df, squad_version='v1.1', output_dir=None, filename=None):
     """
@@ -106,7 +108,11 @@ def generate_squad_examples(question, closest_docs_indices, metadata):
     return squad_examples
 
 def pdf_converter(directory_path):
-    list_pdf = os.listdir(directory_path)
+    list_file = os.listdir(directory_path)
+    list_pdf = []
+    for file in list_file:
+        if file.endswith('pdf'):
+            list_pdf.append(file)
     df = pd.DataFrame(columns=['title', 'paragraphs'])
     for i, pdf in enumerate(list_pdf):
         try:
@@ -122,4 +128,45 @@ def pdf_converter(directory_path):
         except:
             print("Unexpected error:", sys.exc_info()[0])
             print("Unable to process file {}".format(pdf))
+    return df
+
+class MLStripper(HTMLParser):
+
+    def __init__(self):
+        self.reset()
+        self.strict = False
+        self.convert_charrefs= True
+        self.fed = []
+
+    def handle_data(self, d):
+        self.fed.append(d)
+
+    def get_data(self):
+        return ''.join(self.fed)
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
+
+def md_converter(directory_path):
+    """Get all md, convert them to html and create the pandas dataframe with columns ['title', 'paragraphs']"""
+    dict_doc = {'title': [], 'paragraphs': []}
+    for md_file in Path(directory_path).glob('**/*.md'):
+        md_file = str(md_file)
+        filename = md_file.split("/")[-1]
+        try:
+            with open(md_file, "r") as f:
+                dict_doc['title'].append(filename)
+                md_text = f.read()
+                html_text = markdown.markdown(md_text)
+                html_text_list = list(html_text.split("<p>"))
+                for i in range(len(html_text_list)):
+                    html_text_list[i] = strip_tags(html_text_list[i]).replace("\n", " ").lstrip().rstrip()
+                clean_text_list = list(filter(None, html_text_list))
+                dict_doc['paragraphs'].append(clean_text_list)
+        except:
+            print("Unexpected error:", sys.exc_info()[0])
+            print("Unable to process file {}".format(filename))
+    df = pd.DataFrame.from_dict(dict_doc)
     return df
