@@ -78,13 +78,18 @@ from cdqa.utils.converters import pdf_converter
 df = pdf_converter(directory_path='path_to_pdf_folder')
 ```
 
-You will need to install [Java OpenJDK](https://openjdk.java.net/install/) to use this converter. We plan to improve and add more converters in the future. Stay tuned!
+You will need to install [Java OpenJDK](https://openjdk.java.net/install/) to use this converter. We currently have converters for:
+
+- pdf
+- markdown
+
+We plan to improve and add more converters in the future. Stay tuned!
 
 ### Downloading pre-trained models and data
 
 You can download the models and data manually from the GitHub [releases](https://github.com/cdqa-suite/cdQA/releases) or use our download functions:
 
-```shell
+```python
 from cdqa.utils.download import download_squad, download_model, download_bnpp_data
 
 directory = 'path-to-directory'
@@ -168,9 +173,9 @@ You can also play directly with these notebook examples using [Binder](https://g
 
 | Notebook                         | Hardware     | Platform                                                                                                                                                                                                                                                                                                                                      |
 | -------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [1] First steps with cdQA        | (CPU or GPU) | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-first-steps-cdqa.ipynb) [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-first-steps-cdqa.ipynb)   |
-| [2] Using the PDF converter      | (CPU or GPU) | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-use-pdf-converter.ipynb) [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-use-pdf-converter.ipynb) |
-| [3] Training the reader on SQuAD | (GPU)        | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-train-reader-squad.ipynb)                                                                                                                                                         |
+| [1] First steps with cdQA        | CPU or GPU | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-first-steps-cdqa.ipynb) [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-first-steps-cdqa.ipynb)   |
+| [2] Using the PDF converter      | CPU or GPU | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/cdqa-suite/cdQA/master?filepath=examples%2Ftutorial-use-pdf-converter.ipynb) [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-use-pdf-converter.ipynb) |
+| [3] Training the reader on SQuAD | GPU        | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cdqa-suite/cdQA/blob/master/examples/tutorial-train-reader-squad.ipynb)                                                                                                                                                         |
 
 Binder and Google Colaboratory provide temporary environments and may be slow to start but we recommend them if you want to get started with `cdQA` easily.
 
