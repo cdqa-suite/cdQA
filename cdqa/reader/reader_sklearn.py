@@ -805,6 +805,7 @@ class Reader(BaseEstimator):
             tokenizer=self.tokenizer,
             evaluate=False,
             output_examples=False,
+            verbose_logging=self.verbose_logging
         )
         global_step, tr_loss = train(
             self, train_dataset, self.model, self.tokenizer, self.verbose_logging
