@@ -1281,6 +1281,6 @@ def n_best_predictions(final_predictions_sorted, all_examples, n):
     final_dict = collections.OrderedDict()
     final_dict = {z[0]: list(z[1:]) for z in zip(*final_list)}
     if len(final_prediction_list) > n:
-        n_list = list(final_dict.items())[:n]
-        return n_list
+        n_dict = list(final_dict.items())[:n]
+        return n_dict
     return final_dict
