@@ -454,7 +454,7 @@ RawResult = collections.namedtuple("RawResult",
 def write_predictions(all_examples, all_features, all_results, n_best_size,
                       max_answer_length, do_lower_case, output_prediction_file,
                       output_nbest_file, output_null_log_odds_file, verbose_logging,
-                      version_2_with_negative, null_score_diff_threshold):
+                      version_2_with_negative, null_score_diff_threshold, top_n_predictions):
     """Write final predictions to the json file and log-odds of null if needed."""
     if verbose_logging:
         logger.info("Writing predictions to: %s" % (output_prediction_file))
@@ -649,6 +649,8 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
 
     best_logit = list(final_predictions_sorted.items())[0][1]['start_logit'] + \
                  list(final_predictions_sorted.items())[0][1]['end_logit']
+    n_best_predictions_dict = n_best_predictions(final_predictions_sorted, all_examples,
+                                top_n_predictions)
 
     if output_prediction_file:
         with open(output_prediction_file, "w") as writer:
@@ -661,7 +663,7 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
         with open(output_null_log_odds_file, "w") as writer:
             writer.write(json.dumps(scores_diff_json, indent=4) + "\n")
 
-    return final_prediction, all_predictions, all_nbest_json, scores_diff_json, best_logit
+    return final_prediction, all_predictions, all_nbest_json, scores_diff_json, best_logit, n_best_predictions_dict
 
 
 def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
@@ -988,6 +990,7 @@ class BertQA(BaseEstimator):
                  output_dir=None,
                  server_ip='',
                  server_port=''):
+                 #top_n_predictions=5):
 
         self.bert_model = bert_model
         self.train_batch_size = train_batch_size
@@ -1010,6 +1013,7 @@ class BertQA(BaseEstimator):
         self.output_dir = output_dir
         self.server_ip = server_ip
         self.server_port = server_port
+        #self.top_n_predictions=top_n_predictions
 
         # Prepare model
         self.model = BertForQuestionAnswering.from_pretrained(self.bert_model,
@@ -1239,7 +1243,7 @@ class BertQA(BaseEstimator):
             output_nbest_file = None
             output_null_log_odds_file = None
         final_prediction, all_predictions, all_nbest_json, \
-         scores_diff_json, best_logit = write_predictions(
+         scores_diff_json, best_logit, n_best_predictions_dict = write_predictions(
             eval_examples,
             eval_features,
             all_results,
@@ -1251,9 +1255,32 @@ class BertQA(BaseEstimator):
             output_null_log_odds_file,
             self.verbose_logging,
             self.version_2_with_negative,
-            self.null_score_diff_threshold)
+            self.null_score_diff_threshold,
+            top_n_predictions=5)
 
         if return_logit:
-            return (*final_prediction, best_logit)
+            return (*final_prediction, best_logit, n_best_predictions_dict)
         else:
-            return final_prediction
+            return final_prediction, n_best_predictions_dict
+
+
+
+def n_best_predictions(final_predictions_sorted, all_examples, n):
+    question_id_list = [
+        list(final_predictions_sorted.items())[i][0]
+        for i in range(len(list(final_predictions_sorted.items())))
+    ]
+    final_prediction_list = [
+        list(final_predictions_sorted.items())[i][1]['text']
+        for i in range(len(list(final_predictions_sorted.items())))
+    ]
+    title_list = [[e][0].title for q in question_id_list for e in all_examples
+                  if e.qas_id == q]
+    paragraph_list = [[e][0].paragraph for q in question_id_list
+                      for e in all_examples if e.qas_id == q]
+    final_list = [final_prediction_list, title_list, paragraph_list]
+    final_dict = collections.OrderedDict()
+    final_dict = {z[0]: list(z[1:]) for z in zip(*final_list)}
+    if len(final_prediction_list) > n:
+        n_list = list(final_dict.items())[:n]
+        return n_list
