@@ -1258,9 +1258,76 @@ class BertQA(BaseEstimator):
             self.null_score_diff_threshold)
 
         if return_logit:
-            return (*final_prediction, best_logit, n_best_predictions_dict)
+            return (*final_prediction, best_logit)
         else:
-            return final_prediction, n_best_predictions_dict
+            return final_prediction
+
+    def n_predictions(self, X, return_logit=False):
+        eval_examples, eval_features = X
+        if self.verbose_logging:
+            logger.info("***** Running predictions *****")
+            logger.info("  Num orig examples = %d", len(eval_examples))
+            logger.info("  Num split examples = %d", len(eval_features))
+            logger.info("  Batch size = %d", self.predict_batch_size)
+
+        all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
+        all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
+        all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
+        all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
+        eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
+        # Run prediction for full data
+        eval_sampler = SequentialSampler(eval_data)
+        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler,
+                                     batch_size=self.predict_batch_size)
+
+        self.model.to(self.device)
+        self.model.eval()
+        all_results = []
+        if self.verbose_logging:
+            logger.info("Start evaluating")
+        for input_ids, input_mask, segment_ids, example_indices in eval_dataloader:
+            if len(all_results) % 1000 == 0 and self.verbose_logging:
+                logger.info("Processing example: %d" % (len(all_results)))
+            input_ids = input_ids.to(self.device)
+            input_mask = input_mask.to(self.device)
+            segment_ids = segment_ids.to(self.device)
+            with torch.no_grad():
+                batch_start_logits, batch_end_logits = self.model(
+                    input_ids, segment_ids, input_mask)
+            for i, example_index in enumerate(example_indices):
+                start_logits = batch_start_logits[i].detach().cpu().tolist()
+                end_logits = batch_end_logits[i].detach().cpu().tolist()
+                eval_feature = eval_features[example_index.item()]
+                unique_id = int(eval_feature.unique_id)
+                all_results.append(RawResult(unique_id=unique_id,
+                                             start_logits=start_logits,
+                                             end_logits=end_logits))
+        if self.output_dir:
+            if not os.path.exists(self.output_dir):
+                os.makedirs(self.output_dir)
+            output_prediction_file = os.path.join(self.output_dir, "predictions.json")
+            output_nbest_file = os.path.join(self.output_dir, "nbest_predictions.json")
+            output_null_log_odds_file = os.path.join(self.output_dir, "null_odds.json")
+        else:
+            output_prediction_file = None
+            output_nbest_file = None
+            output_null_log_odds_file = None
+        final_prediction, all_predictions, all_nbest_json, \
+         scores_diff_json, best_logit, n_best_predictions_dict = write_predictions(
+            eval_examples,
+            eval_features,
+            all_results,
+            self.n_best_size,
+            self.max_answer_length,
+            self.do_lower_case,
+            output_prediction_file,
+            output_nbest_file,
+            output_null_log_odds_file,
+            self.verbose_logging,
+            self.version_2_with_negative,
+            self.null_score_diff_threshold)
+        return n_best_predictions_dict
+
 
 
 
