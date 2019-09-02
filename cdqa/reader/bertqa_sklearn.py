@@ -454,7 +454,7 @@ RawResult = collections.namedtuple("RawResult",
 def write_predictions(all_examples, all_features, all_results, n_best_size,
                       max_answer_length, do_lower_case, output_prediction_file,
                       output_nbest_file, output_null_log_odds_file, verbose_logging,
-                      version_2_with_negative, null_score_diff_threshold, top_n_predictions):
+                      version_2_with_negative, null_score_diff_threshold):
     """Write final predictions to the json file and log-odds of null if needed."""
     if verbose_logging:
         logger.info("Writing predictions to: %s" % (output_prediction_file))
@@ -650,7 +650,7 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
     best_logit = list(final_predictions_sorted.items())[0][1]['start_logit'] + \
                  list(final_predictions_sorted.items())[0][1]['end_logit']
     n_best_predictions_dict = n_best_predictions(final_predictions_sorted, all_examples,
-                                top_n_predictions)
+                                n_best_size)
 
     if output_prediction_file:
         with open(output_prediction_file, "w") as writer:
@@ -990,7 +990,7 @@ class BertQA(BaseEstimator):
                  output_dir=None,
                  server_ip='',
                  server_port=''):
-                 #top_n_predictions=5):
+
 
         self.bert_model = bert_model
         self.train_batch_size = train_batch_size
@@ -1013,7 +1013,7 @@ class BertQA(BaseEstimator):
         self.output_dir = output_dir
         self.server_ip = server_ip
         self.server_port = server_port
-        #self.top_n_predictions=top_n_predictions
+
 
         # Prepare model
         self.model = BertForQuestionAnswering.from_pretrained(self.bert_model,
@@ -1255,8 +1255,7 @@ class BertQA(BaseEstimator):
             output_null_log_odds_file,
             self.verbose_logging,
             self.version_2_with_negative,
-            self.null_score_diff_threshold,
-            top_n_predictions=5)
+            self.null_score_diff_threshold)
 
         if return_logit:
             return (*final_prediction, best_logit, n_best_predictions_dict)
@@ -1284,3 +1283,4 @@ def n_best_predictions(final_predictions_sorted, all_examples, n):
     if len(final_prediction_list) > n:
         n_list = list(final_dict.items())[:n]
         return n_list
+    return final_dict
