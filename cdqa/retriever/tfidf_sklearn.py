@@ -4,6 +4,7 @@ import time
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.base import BaseEstimator
 
+
 class TfidfRetriever(BaseEstimator):
     """
     A scikit-learn estimator for TfidfRetriever. Trains a tf-idf matrix from a corpus
@@ -86,19 +87,21 @@ class TfidfRetriever(BaseEstimator):
 
     """
 
-    def __init__(self,
-                 lowercase=True,
-                 preprocessor=None,
-                 tokenizer=None,
-                 stop_words='english',
-                 token_pattern=r"(?u)\b\w\w+\b",
-                 ngram_range=(1, 2),
-                 max_df=0.85,
-                 min_df=2,
-                 vocabulary=None,
-                 paragraphs=None,
-                 top_n=3,
-                 verbose=False):
+    def __init__(
+        self,
+        lowercase=True,
+        preprocessor=None,
+        tokenizer=None,
+        stop_words="english",
+        token_pattern=r"(?u)\b\w\w+\b",
+        ngram_range=(1, 2),
+        max_df=0.85,
+        min_df=2,
+        vocabulary=None,
+        paragraphs=None,
+        top_n=3,
+        verbose=False,
+    ):
 
         self.lowercase = lowercase
         self.preprocessor = preprocessor
@@ -115,16 +118,17 @@ class TfidfRetriever(BaseEstimator):
 
     def fit(self, X, y=None):
 
-        self.vectorizer = TfidfVectorizer(lowercase=self.lowercase,
-                                          preprocessor=self.preprocessor,
-                                          tokenizer=self.tokenizer,
-                                          stop_words=self.stop_words,
-                                          token_pattern=self.token_pattern,
-                                          ngram_range=self.ngram_range,
-                                          max_df=self.max_df,
-                                          min_df=self.min_df,
-                                          vocabulary=self.vocabulary
-                                          )
+        self.vectorizer = TfidfVectorizer(
+            lowercase=self.lowercase,
+            preprocessor=self.preprocessor,
+            tokenizer=self.tokenizer,
+            stop_words=self.stop_words,
+            token_pattern=self.token_pattern,
+            ngram_range=self.ngram_range,
+            max_df=self.max_df,
+            min_df=self.min_df,
+            vocabulary=self.vocabulary,
+        )
         self.tfidf_matrix = self.vectorizer.fit_transform(X)
 
         return self
@@ -134,22 +138,24 @@ class TfidfRetriever(BaseEstimator):
         t0 = time.time()
         question_vector = self.vectorizer.transform([X])
         scores = pd.DataFrame(self.tfidf_matrix.dot(question_vector.T).toarray())
-        closest_docs_indices = scores.sort_values(by=0, ascending=False).index[:self.top_n].values
+        closest_docs_indices = (
+            scores.sort_values(by=0, ascending=False).index[: self.top_n].values
+        )
 
         # inspired from https://github.com/facebookresearch/DrQA/blob/50d0e49bb77fe0c6e881efb4b6fe2e61d3f92509/scripts/reader/interactive.py#L63
         if self.verbose:
             rank = 1
-            table = prettytable.PrettyTable(['rank', 'index', 'title'])
+            table = prettytable.PrettyTable(["rank", "index", "title"])
             for i in range(len(closest_docs_indices)):
                 index = closest_docs_indices[i]
                 if self.paragraphs:
-                    article_index = self.paragraphs[int(index)]['index']
-                    title = metadata.iloc[int(article_index)]['title']
+                    article_index = self.paragraphs[int(index)]["index"]
+                    title = metadata.iloc[int(article_index)]["title"]
                 else:
-                    title = metadata.iloc[int(index)]['title']
+                    title = metadata.iloc[int(index)]["title"]
                 table.add_row([rank, index, title])
-                rank+=1
+                rank += 1
             print(table)
-            print('Time: {} seconds'.format(round(time.time() - t0, 5)))
+            print("Time: {} seconds".format(round(time.time() - t0, 5)))
 
         return closest_docs_indices
