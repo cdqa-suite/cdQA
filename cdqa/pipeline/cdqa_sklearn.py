@@ -44,6 +44,7 @@ class QAPipeline(BaseEstimator):
     >>> prediction = qa_pipeline.predict(X='When BNP Paribas was created?')
 
     """
+
     def __init__(self, reader=None, **kwargs):
 
         # Separating kwargs
@@ -72,11 +73,9 @@ class QAPipeline(BaseEstimator):
         else:
             self.reader = reader
 
-        self.processor_train = BertProcessor(is_training=True,
-                                             **kwargs_processor)
+        self.processor_train = BertProcessor(is_training=True, **kwargs_processor)
 
-        self.processor_predict = BertProcessor(is_training=False,
-                                               **kwargs_processor)
+        self.processor_predict = BertProcessor(is_training=False, **kwargs_processor)
 
         self.retriever = TfidfRetriever(**kwargs_retriever)
 
@@ -95,12 +94,15 @@ class QAPipeline(BaseEstimator):
 
         warnings.warn(
             "This function is deprecated and will be removed in a future version of cdQA, \
-        please use fit_retriever instead", DeprecationWarning)
+        please use fit_retriever instead",
+            DeprecationWarning,
+        )
 
         self.metadata = X
-        self.metadata['content'] = self.metadata['paragraphs'].apply(
-            lambda x: ' '.join(x))
-        self.retriever.fit(self.metadata['content'])
+        self.metadata["content"] = self.metadata["paragraphs"].apply(
+            lambda x: " ".join(x)
+        )
+        self.retriever.fit(self.metadata["content"])
 
         return self
 
@@ -113,9 +115,10 @@ class QAPipeline(BaseEstimator):
         """
 
         self.metadata = X
-        self.metadata['content'] = self.metadata['paragraphs'].apply(
-            lambda x: ' '.join(x))
-        self.retriever.fit(self.metadata['content'])
+        self.metadata["content"] = self.metadata["paragraphs"].apply(
+            lambda x: " ".join(x)
+        )
+        self.retriever.fit(self.metadata["content"])
 
         return self
 
@@ -157,46 +160,50 @@ class QAPipeline(BaseEstimator):
         structure: (answer, title, paragraph, best logit)
 
         """
-        if (isinstance(X, str)):
-            closest_docs_indices = self.retriever.predict(
-                X, metadata=self.metadata)
+        if isinstance(X, str):
+            closest_docs_indices = self.retriever.predict(X, metadata=self.metadata)
             squad_examples = generate_squad_examples(
                 question=X,
                 closest_docs_indices=closest_docs_indices,
-                metadata=self.metadata)
-            examples, features = self.processor_predict.fit_transform(
-                X=squad_examples)
-            prediction = self.reader.predict((examples, features),
-                                             return_logit, n_predictions)
+                metadata=self.metadata,
+            )
+            examples, features = self.processor_predict.fit_transform(X=squad_examples)
+            prediction = self.reader.predict(
+                (examples, features), return_logit, n_predictions
+            )
             return prediction
 
-        elif (isinstance(X, list)):
+        elif isinstance(X, list):
             predictions = []
             for query in X:
                 closest_docs_indices = self.retriever.predict(
-                    query, metadata=self.metadata)
+                    query, metadata=self.metadata
+                )
                 squad_examples = generate_squad_examples(
                     question=query,
                     closest_docs_indices=closest_docs_indices,
-                    metadata=self.metadata)
+                    metadata=self.metadata,
+                )
                 examples, features = self.processor_predict.fit_transform(
-                    X=squad_examples)
-                pred = self.reader.predict((examples, features), return_logit,
-                                           n_predictions)
+                    X=squad_examples
+                )
+                pred = self.reader.predict(
+                    (examples, features), return_logit, n_predictions
+                )
                 predictions.append(pred)
 
             return predictions
 
         else:
-            raise TypeError("The input is not a string or a list. \
+            raise TypeError(
+                "The input is not a string or a list. \
                             Please provide a string or a list of strings as input"
-                            )
-
+            )
 
     def to(self, device):
-        ''' Send reader to CPU if device=='cpu' or to GPU if device=='cuda'
-        '''
-        if device not in ('cpu', 'cuda'):
+        """ Send reader to CPU if device=='cpu' or to GPU if device=='cuda'
+        """
+        if device not in ("cpu", "cuda"):
             raise ValueError("Attribute device should be 'cpu' or 'cuda'.")
 
         self.reader.model.to(device)
@@ -204,15 +211,15 @@ class QAPipeline(BaseEstimator):
         return self
 
     def cpu(self):
-        ''' Send reader to CPU
-        '''
+        """ Send reader to CPU
+        """
         self.reader.model.cpu()
-        self.reader.device = torch.device('cpu')
+        self.reader.device = torch.device("cpu")
         return self
 
     def cuda(self):
-        ''' Send reader to GPU
-        '''
+        """ Send reader to GPU
+        """
         self.reader.model.cuda()
-        self.reader.device = torch.device('cuda')
+        self.reader.device = torch.device("cuda")
         return self
