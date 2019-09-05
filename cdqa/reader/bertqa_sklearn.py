@@ -47,6 +47,7 @@ from pytorch_pretrained_bert.tokenization import (
 )
 
 from sklearn.base import BaseEstimator, TransformerMixin
+from joblib import Parallel, delayed
 
 if sys.version_info[0] == 2:
     import cPickle as pickle
@@ -133,7 +134,7 @@ class InputFeatures(object):
         self.is_impossible = is_impossible
 
 
-def read_squad_examples(input_file, is_training, version_2_with_negative):
+def read_squad_examples(input_file, is_training, version_2_with_negative, n_jobs=-1):
     """Read a SQuAD json file into a list of SquadExample."""
 
     if isinstance(input_file, str):
@@ -142,89 +143,96 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
     else:
         input_data = input_file
 
+    examples = Parallel(n_jobs=n_jobs)(
+        delayed(read_example)(entry, is_training, version_2_with_negative)
+        for entry in input_data
+    )
+    return examples
+
+
+def read_example(entry, is_training, version_2_with_negative):
+
     def is_whitespace(c):
         if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
             return True
         return False
 
-    examples = []
-    for entry in input_data:
-        for paragraph in entry["paragraphs"]:
-            paragraph_text = paragraph["context"]
-            doc_tokens = []
-            char_to_word_offset = []
-            prev_is_whitespace = True
-            for c in paragraph_text:
-                if is_whitespace(c):
-                    prev_is_whitespace = True
+    for paragraph in entry["paragraphs"]:
+        paragraph_text = paragraph["context"]
+        doc_tokens = []
+        char_to_word_offset = []
+        prev_is_whitespace = True
+        for c in paragraph_text:
+            if is_whitespace(c):
+                prev_is_whitespace = True
+            else:
+                if prev_is_whitespace:
+                    doc_tokens.append(c)
                 else:
-                    if prev_is_whitespace:
-                        doc_tokens.append(c)
-                    else:
-                        doc_tokens[-1] += c
-                    prev_is_whitespace = False
-                char_to_word_offset.append(len(doc_tokens) - 1)
+                    doc_tokens[-1] += c
+                prev_is_whitespace = False
+            char_to_word_offset.append(len(doc_tokens) - 1)
 
-            for qa in paragraph["qas"]:
-                qas_id = qa["id"]
-                question_text = qa["question"]
-                start_position = None
-                end_position = None
-                orig_answer_text = None
-                is_impossible = False
-                if is_training:
-                    if version_2_with_negative:
-                        is_impossible = qa["is_impossible"]
-                    if (len(qa["answers"]) != 1) and (not is_impossible):
-                        raise ValueError(
-                            "For training, each question should have exactly 1 answer."
+        for qa in paragraph["qas"]:
+            qas_id = qa["id"]
+            question_text = qa["question"]
+            start_position = None
+            end_position = None
+            orig_answer_text = None
+            is_impossible = False
+            if is_training:
+                if version_2_with_negative:
+                    is_impossible = qa["is_impossible"]
+                if (len(qa["answers"]) != 1) and (not is_impossible):
+                    raise ValueError(
+                        "For training, each question should have exactly 1 answer."
+                    )
+                if not is_impossible:
+                    answer = qa["answers"][0]
+                    orig_answer_text = answer["text"]
+                    answer_offset = answer["answer_start"]
+                    answer_length = len(orig_answer_text)
+                    start_position = char_to_word_offset[answer_offset]
+                    end_position = char_to_word_offset[
+                        answer_offset + answer_length - 1
+                    ]
+                    # Only add answers where the text can be exactly recovered from the
+                    # document. If this CAN'T happen it's likely due to weird Unicode
+                    # stuff so we will just skip the example.
+                    #
+                    # Note that this means for training mode, every example is NOT
+                    # guaranteed to be preserved.
+                    actual_text = " ".join(
+                        doc_tokens[start_position : (end_position + 1)]
+                    )
+                    cleaned_answer_text = " ".join(
+                        whitespace_tokenize(orig_answer_text)
+                    )
+                    if actual_text.find(cleaned_answer_text) == -1:
+                        logger.warning(
+                            "Could not find answer: '%s' vs. '%s'",
+                            actual_text,
+                            cleaned_answer_text,
                         )
-                    if not is_impossible:
-                        answer = qa["answers"][0]
-                        orig_answer_text = answer["text"]
-                        answer_offset = answer["answer_start"]
-                        answer_length = len(orig_answer_text)
-                        start_position = char_to_word_offset[answer_offset]
-                        end_position = char_to_word_offset[
-                            answer_offset + answer_length - 1
-                        ]
-                        # Only add answers where the text can be exactly recovered from the
-                        # document. If this CAN'T happen it's likely due to weird Unicode
-                        # stuff so we will just skip the example.
-                        #
-                        # Note that this means for training mode, every example is NOT
-                        # guaranteed to be preserved.
-                        actual_text = " ".join(
-                            doc_tokens[start_position : (end_position + 1)]
-                        )
-                        cleaned_answer_text = " ".join(
-                            whitespace_tokenize(orig_answer_text)
-                        )
-                        if actual_text.find(cleaned_answer_text) == -1:
-                            logger.warning(
-                                "Could not find answer: '%s' vs. '%s'",
-                                actual_text,
-                                cleaned_answer_text,
-                            )
-                            continue
-                    else:
-                        start_position = -1
-                        end_position = -1
-                        orig_answer_text = ""
+                        continue
+                else:
+                    start_position = -1
+                    end_position = -1
+                    orig_answer_text = ""
 
-                example = SquadExample(
-                    qas_id=qas_id,
-                    question_text=question_text,
-                    doc_tokens=doc_tokens,
-                    orig_answer_text=orig_answer_text,
-                    start_position=start_position,
-                    end_position=end_position,
-                    is_impossible=is_impossible,
-                    paragraph=paragraph_text,
-                    title=entry["title"],
-                )
-                examples.append(example)
-    return examples
+            example = SquadExample(
+                qas_id=qas_id,
+                question_text=question_text,
+                doc_tokens=doc_tokens,
+                orig_answer_text=orig_answer_text,
+                start_position=start_position,
+                end_position=end_position,
+                is_impossible=is_impossible,
+                paragraph=paragraph_text,
+                title=entry["title"],
+            )
+
+    return example
 
 
 def convert_examples_to_features(
@@ -915,6 +923,9 @@ class BertProcessor(BaseEstimator, TransformerMixin):
         be truncated to this length.
     verbose : bool, optional
         If true, all of the warnings related to data processing will be printed.
+    n_jobs : int or None, optional (default=-1)
+        Number of jobs to run in parallel. 'None' means 1 unless in a
+        :obj:'joblib.parallel_backend' context. '-1' means using all processors.
 
     Returns
     -------
@@ -942,6 +953,7 @@ class BertProcessor(BaseEstimator, TransformerMixin):
         max_query_length=64,
         verbose=False,
         tokenizer=None,
+        n_jobs=-1,
     ):
 
         self.bert_model = bert_model
@@ -952,6 +964,7 @@ class BertProcessor(BaseEstimator, TransformerMixin):
         self.doc_stride = doc_stride
         self.max_query_length = max_query_length
         self.verbose = verbose
+        self.n_jobs = n_jobs
 
         if tokenizer is None:
             self.tokenizer = BertTokenizer.from_pretrained(
@@ -969,6 +982,7 @@ class BertProcessor(BaseEstimator, TransformerMixin):
             input_file=X,
             is_training=self.is_training,
             version_2_with_negative=self.version_2_with_negative,
+            n_jobs=self.n_jobs,
         )
 
         features = convert_examples_to_features(
