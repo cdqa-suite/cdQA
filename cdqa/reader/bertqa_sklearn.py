@@ -144,13 +144,13 @@ def read_squad_examples(input_file, is_training, version_2_with_negative, n_jobs
         input_data = input_file
 
     examples = Parallel(n_jobs=n_jobs)(
-        delayed(read_example)(entry, is_training, version_2_with_negative)
+        delayed(_read_example)(entry, is_training, version_2_with_negative)
         for entry in input_data
     )
     return examples
 
 
-def read_example(entry, is_training, version_2_with_negative):
+def _read_example(entry, is_training, version_2_with_negative):
 
     def is_whitespace(c):
         if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
@@ -416,7 +416,6 @@ def convert_examples_to_features(
             unique_id += 1
 
     return features
-
 
 def _improve_answer_span(
     doc_tokens, input_start, input_end, tokenizer, orig_answer_text
