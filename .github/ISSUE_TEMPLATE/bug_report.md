@@ -7,6 +7,8 @@ assignees: ''
 
 ---
 
+**Please be sure that there's no other issue regarding the same bug by searching in older issues and that the bug is particular to cdQA (sometimes you can find a fix for the bug by doing a quick search on google).**
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
