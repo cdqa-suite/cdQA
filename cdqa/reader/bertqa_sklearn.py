@@ -144,26 +144,23 @@ def read_squad_examples(input_file, is_training, version_2_with_negative, n_jobs
     else:
         input_data = input_file
 
-    # Setting managed list for multiprocessing and pool object
-    examples = mp.Manager().list()
+    # Read examples with multiprocessing over entries
     processes = n_jobs if n_jobs != -1 else mp.cpu_count()
     pool = mp.Pool(processes=processes)
-    for entry in input_data:
-        for paragraph in entry["paragraphs"]:
-            pool.apply(
-                func=_read_paragraph,
-                args=(
-                    examples,
-                    paragraph,
-                    entry["title"],
-                    is_training,
-                    version_2_with_negative,
-                ),
-            )
-    pool.close()
-    pool.join()
+    examples = pool.map(_read_entry_parallel, [(entry, is_training, version_2_with_negative) for entry in input_data])
 
-    return list(examples)
+    # examples will be a nested list, unflattenning with no parallelization showed to
+    # be effective
+
+    return _flatten_examples(examples)
+
+
+def _flatten_examples(examples):
+    flatten_examples = []
+    for entry in examples:
+        for processed_qa in entry:
+            flatten_examples.append(processed_qa)
+    return flatten_examples
 
 
 def _is_whitespace(c):
@@ -172,78 +169,82 @@ def _is_whitespace(c):
     return False
 
 
-def _read_paragraph(examples, paragraph, title, is_training, version_2_with_negative):
+def _read_entry_parallel(args_tuple):
 
-    paragraph_text = paragraph["context"]
-    doc_tokens = []
-    char_to_word_offset = []
-    prev_is_whitespace = True
-    for c in paragraph_text:
-        if _is_whitespace(c):
-            prev_is_whitespace = True
-        else:
-            if prev_is_whitespace:
-                doc_tokens.append(c)
+    entry, is_training, version_2_with_negative = args_tuple
+
+    examples = []
+    for paragraph in entry['paragraphs']:
+        paragraph_text = paragraph["context"]
+        doc_tokens = []
+        char_to_word_offset = []
+        prev_is_whitespace = True
+        for c in paragraph_text:
+            if _is_whitespace(c):
+                prev_is_whitespace = True
             else:
-                doc_tokens[-1] += c
-            prev_is_whitespace = False
-        char_to_word_offset.append(len(doc_tokens) - 1)
+                if prev_is_whitespace:
+                    doc_tokens.append(c)
+                else:
+                    doc_tokens[-1] += c
+                prev_is_whitespace = False
+            char_to_word_offset.append(len(doc_tokens) - 1)
 
-    for qa in paragraph["qas"]:
-        qas_id = qa["id"]
-        question_text = qa["question"]
-        start_position = None
-        end_position = None
-        orig_answer_text = None
-        is_impossible = False
-        if is_training:
-            if version_2_with_negative:
-                is_impossible = qa["is_impossible"]
-            if (len(qa["answers"]) != 1) and (not is_impossible):
-                raise ValueError(
-                    "For training, each question should have exactly 1 answer."
-                )
-            if not is_impossible:
-                answer = qa["answers"][0]
-                orig_answer_text = answer["text"]
-                answer_offset = answer["answer_start"]
-                answer_length = len(orig_answer_text)
-                start_position = char_to_word_offset[answer_offset]
-                end_position = char_to_word_offset[answer_offset + answer_length - 1]
-                # Only add answers where the text can be exactly recovered from the
-                # document. If this CAN'T happen it's likely due to weird Unicode
-                # stuff so we will just skip the example.
-                #
-                # Note that this means for training mode, every example is NOT
-                # guaranteed to be preserved.
-                actual_text = " ".join(doc_tokens[start_position : (end_position + 1)])
-                cleaned_answer_text = " ".join(whitespace_tokenize(orig_answer_text))
-                if actual_text.find(cleaned_answer_text) == -1:
-                    logger.warning(
-                        "Could not find answer: '%s' vs. '%s'",
-                        actual_text,
-                        cleaned_answer_text,
+        for qa in paragraph["qas"]:
+            qas_id = qa["id"]
+            question_text = qa["question"]
+            start_position = None
+            end_position = None
+            orig_answer_text = None
+            is_impossible = False
+            if is_training:
+                if version_2_with_negative:
+                    is_impossible = qa["is_impossible"]
+                if (len(qa["answers"]) != 1) and (not is_impossible):
+                    raise ValueError(
+                        "For training, each question should have exactly 1 answer."
                     )
-                    continue
-            else:
-                start_position = -1
-                end_position = -1
-                orig_answer_text = ""
+                if not is_impossible:
+                    answer = qa["answers"][0]
+                    orig_answer_text = answer["text"]
+                    answer_offset = answer["answer_start"]
+                    answer_length = len(orig_answer_text)
+                    start_position = char_to_word_offset[answer_offset]
+                    end_position = char_to_word_offset[answer_offset + answer_length - 1]
+                    # Only add answers where the text can be exactly recovered from the
+                    # document. If this CAN'T happen it's likely due to weird Unicode
+                    # stuff so we will just skip the example.
+                    #
+                    # Note that this means for training mode, every example is NOT
+                    # guaranteed to be preserved.
+                    actual_text = " ".join(doc_tokens[start_position : (end_position + 1)])
+                    cleaned_answer_text = " ".join(whitespace_tokenize(orig_answer_text))
+                    if actual_text.find(cleaned_answer_text) == -1:
+                        logger.warning(
+                            "Could not find answer: '%s' vs. '%s'",
+                            actual_text,
+                            cleaned_answer_text,
+                        )
+                        continue
+                else:
+                    start_position = -1
+                    end_position = -1
+                    orig_answer_text = ""
 
-        examples.append(
-            SquadExample(
-                qas_id=qas_id,
-                question_text=question_text,
-                doc_tokens=doc_tokens,
-                orig_answer_text=orig_answer_text,
-                start_position=start_position,
-                end_position=end_position,
-                is_impossible=is_impossible,
-                paragraph=paragraph_text,
-                title=title,
+            examples.append(
+                SquadExample(
+                    qas_id=qas_id,
+                    question_text=question_text,
+                    doc_tokens=doc_tokens,
+                    orig_answer_text=orig_answer_text,
+                    start_position=start_position,
+                    end_position=end_position,
+                    is_impossible=is_impossible,
+                    paragraph=paragraph_text,
+                    title=entry['title'],
+                )
             )
-        )
-
+    return examples
 
 def convert_examples_to_features(
     examples,
