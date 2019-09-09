@@ -147,10 +147,13 @@ def read_squad_examples(input_file, is_training, version_2_with_negative, n_jobs
     # Read examples with multiprocessing over entries
     processes = n_jobs if n_jobs != -1 else mp.cpu_count()
     pool = mp.Pool(processes=processes)
-    examples = pool.map(_read_entry_parallel, [(entry, is_training, version_2_with_negative) for entry in input_data])
+    examples = pool.map(
+        _read_entry_parallel,
+        [(entry, is_training, version_2_with_negative) for entry in input_data],
+    )
 
-    # examples will be a nested list, unflattenning with no parallelization showed to
-    # be effective
+    # examples will be a nested list, unflattenning with no parallelization
+    # showed to be more effective
 
     return _flatten_examples(examples)
 
@@ -174,7 +177,7 @@ def _read_entry_parallel(args_tuple):
     entry, is_training, version_2_with_negative = args_tuple
 
     examples = []
-    for paragraph in entry['paragraphs']:
+    for paragraph in entry["paragraphs"]:
         paragraph_text = paragraph["context"]
         doc_tokens = []
         char_to_word_offset = []
@@ -210,15 +213,21 @@ def _read_entry_parallel(args_tuple):
                     answer_offset = answer["answer_start"]
                     answer_length = len(orig_answer_text)
                     start_position = char_to_word_offset[answer_offset]
-                    end_position = char_to_word_offset[answer_offset + answer_length - 1]
+                    end_position = char_to_word_offset[
+                        answer_offset + answer_length - 1
+                    ]
                     # Only add answers where the text can be exactly recovered from the
                     # document. If this CAN'T happen it's likely due to weird Unicode
                     # stuff so we will just skip the example.
                     #
                     # Note that this means for training mode, every example is NOT
                     # guaranteed to be preserved.
-                    actual_text = " ".join(doc_tokens[start_position : (end_position + 1)])
-                    cleaned_answer_text = " ".join(whitespace_tokenize(orig_answer_text))
+                    actual_text = " ".join(
+                        doc_tokens[start_position : (end_position + 1)]
+                    )
+                    cleaned_answer_text = " ".join(
+                        whitespace_tokenize(orig_answer_text)
+                    )
                     if actual_text.find(cleaned_answer_text) == -1:
                         logger.warning(
                             "Could not find answer: '%s' vs. '%s'",
@@ -241,10 +250,11 @@ def _read_entry_parallel(args_tuple):
                     end_position=end_position,
                     is_impossible=is_impossible,
                     paragraph=paragraph_text,
-                    title=entry['title'],
+                    title=entry["title"],
                 )
             )
     return examples
+
 
 def convert_examples_to_features(
     examples,
@@ -258,15 +268,13 @@ def convert_examples_to_features(
 ):
     """Loads a data file into a list of `InputBatch`s."""
 
-    # Setting managed list for multiprocessing and pool object
-    features = mp.Manager().list()
+    # Read examples with multiprocessing over examples
     processes = n_jobs if n_jobs != -1 else mp.cpu_count()
     pool = mp.Pool(processes=processes)
-    for (example_index, example) in enumerate(examples):
-        pool.apply(
-            func=_example_to_feature,
-            args=(
-                features,
+    features = pool.map(
+        _example_to_features_parallel,
+        [
+            (
                 example_index,
                 example,
                 tokenizer,
@@ -275,25 +283,39 @@ def convert_examples_to_features(
                 max_query_length,
                 is_training,
                 verbose,
-            ),
-        )
-    pool.close()
-    pool.join()
+            )
+            for (example_index, example) in enumerate(examples)
+        ],
+    )
 
-    return list(features)
+    # features will be a nested list, unflattenning with no parallelization
+    # showed to be more effective
+
+    return _flatten_features(features)
 
 
-def _example_to_feature(
-    features,
-    example_index,
-    example,
-    tokenizer,
-    max_seq_length,
-    doc_stride,
-    max_query_length,
-    is_training,
-    verbose,
-):
+def _flatten_features(features):
+    flatten_features = []
+    for feat_list in features:
+        for feat in feat_list:
+            flatten_features.append(feat)
+    return flatten_features
+
+
+def _example_to_features_parallel(args_tuple):
+    (
+        example_index,
+        example,
+        tokenizer,
+        max_seq_length,
+        doc_stride,
+        max_query_length,
+        is_training,
+        verbose,
+    ) = args_tuple
+
+    features = []
+
     query_tokens = tokenizer.tokenize(example.question_text)
 
     if len(query_tokens) > max_query_length:
@@ -454,6 +476,8 @@ def _example_to_feature(
                 is_impossible=example.is_impossible,
             )
         )
+
+    return features
 
 
 def _improve_answer_span(
