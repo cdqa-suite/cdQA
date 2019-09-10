@@ -70,7 +70,7 @@ class TfidfRetriever(BaseEstimator):
 
     Examples
     --------
-    >>> from cdqa.retriever.tfidf_retriever_sklearn import TfidfRetriever
+    >>> from cdqa.retriever.tfidf_sklearn import TfidfRetriever
 
     >>> retriever = TfidfRetriever(ngram_range=(1, 2), max_df=0.85, stop_words='english')
     >>> retriever.fit(X=df['content'])
