@@ -91,7 +91,7 @@ def generate_squad_examples(question, closest_docs_indices, metadata):
 
     metadata_sliced = metadata.loc[closest_docs_indices]
 
-    for index, row in tqdm(metadata_sliced.iterrows()):
+    for index, row in metadata_sliced.iterrows():
         temp = {"title": row["title"], "paragraphs": []}
 
         for paragraph in row["paragraphs"]:

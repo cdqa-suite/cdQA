@@ -4,8 +4,12 @@ from collections import Counter
 import string
 import re
 import argparse
+import tqdm
 import json
 import sys
+import os
+
+from tqdm.autonotebook import tqdm
 
 
 def normalize_answer(s):
@@ -95,7 +99,7 @@ def evaluate_reader(dataset_file, prediction_file, expected_version="1.1"):
         [description]
     """
 
-    with open(dataset_file) as dataset_file:
+    with open(dataset_file, "r") as dataset_file:
         dataset_json = json.load(dataset_file)
         if dataset_json["version"] != expected_version:
             print(
@@ -106,13 +110,13 @@ def evaluate_reader(dataset_file, prediction_file, expected_version="1.1"):
                 file=sys.stderr,
             )
         dataset = dataset_json["data"]
-    with open(prediction_file) as prediction_file:
+    with open(prediction_file, "r") as prediction_file:
         predictions = json.load(prediction_file)
 
     return evaluate(dataset, predictions)
 
 
-def evaluate_pipeline(cdqa_pipeline, annotated_json):
+def evaluate_pipeline(cdqa_pipeline, annotated_json, output_dir="./results"):
     """Evaluation method for a whole pipeline (retriever + reader)
 
     Parameters
@@ -121,17 +125,48 @@ def evaluate_pipeline(cdqa_pipeline, annotated_json):
         Pipeline to be evaluated
     annotated_json: str
         path to json file in SQuAD format with annotated questions and answers
+    output_dir: str
+        path to directory where results and predictions will be saved. If None,
+        no file will be saved
 
     Returns
     -------
     A dictionary with exact match and f1 scores
 
     """
+    if output_dir is not None:
+        dir = os.path.expanduser(output_dir)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        dir = os.path.join(dir, annotated_json.split("/")[-1][:-5])
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        preds_path = os.path.join(dir, "all_predictions.json")
+        results_path = os.path.join(dir, "results.json")
 
-    with open(annotated_json) as file:
-        data = json.load(file)
-    all_predictions = dict()
-    articles = data["data"]
+    with open(annotated_json, "r") as file:
+        data_dict = json.load(file)
+
+    queries = _get_queries_list(data_dict)
+    all_predictions = _pipeline_predictions(cdqa_pipeline, queries)
+    if output_dir is not None:
+        with open(preds_path, "w") as f:
+            json.dump(all_predictions, f)
+
+    results = evaluate(data_dict["data"], all_predictions)
+    if output_dir is not None:
+        with open(results_path, "w") as f:
+            json.dump(results, f)
+
+    print(results)
+
+    return results
+
+
+def _get_queries_list(data_dict):
+
+    queries = []
+    articles = data_dict["data"]
     for article in articles:
         paragraphs = article["paragraphs"]
         for paragraph in paragraphs:
@@ -139,7 +174,15 @@ def evaluate_pipeline(cdqa_pipeline, annotated_json):
             for question in questions:
                 query = question["question"]
                 id = question["id"]
-                prediction = cdqa_pipeline.predict(X=query)
-                all_predictions[id] = prediction[0]
+                queries.append((id, query))
 
-    return evaluate(data["data"], all_predictions)
+    return queries
+
+
+def _pipeline_predictions(cdqa_pipeline, queries):
+
+    all_predictions = dict()
+    for id, query in tqdm(queries):
+        all_predictions[id] = cdqa_pipeline.predict(X=query)[0]
+
+    return all_predictions

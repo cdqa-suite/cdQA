@@ -146,11 +146,11 @@ def read_squad_examples(input_file, is_training, version_2_with_negative, n_jobs
 
     # Read examples with multiprocessing over entries
     processes = n_jobs if n_jobs != -1 else mp.cpu_count()
-    pool = mp.Pool(processes=processes)
-    examples = pool.map(
-        _read_entry_parallel,
-        [(entry, is_training, version_2_with_negative) for entry in input_data],
-    )
+    with mp.Pool(processes=processes) as pool:
+        examples = pool.map(
+            _read_entry_parallel,
+            [(entry, is_training, version_2_with_negative) for entry in input_data],
+        )
 
     # examples will be a nested list, unflattenning with no parallelization
     # showed to be more effective
@@ -270,23 +270,23 @@ def convert_examples_to_features(
 
     # Read examples with multiprocessing over examples
     processes = n_jobs if n_jobs != -1 else mp.cpu_count()
-    pool = mp.Pool(processes=processes)
-    features = pool.map(
-        _example_to_features_parallel,
-        [
-            (
-                example_index,
-                example,
-                tokenizer,
-                max_seq_length,
-                doc_stride,
-                max_query_length,
-                is_training,
-                verbose,
-            )
-            for (example_index, example) in enumerate(examples)
-        ],
-    )
+    with mp.Pool(processes=processes) as pool:
+        features = pool.map(
+            _example_to_features_parallel,
+            [
+                (
+                    example_index,
+                    example,
+                    tokenizer,
+                    max_seq_length,
+                    doc_stride,
+                    max_query_length,
+                    is_training,
+                    verbose,
+                )
+                for (example_index, example) in enumerate(examples)
+            ],
+        )
 
     # features will be a nested list, unflattenning with no parallelization
     # showed to be more effective
