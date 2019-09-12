@@ -22,10 +22,8 @@ class QAPipeline(BaseEstimator):
         dataframe containing your corpus of documents metadata
         header should be of format: title, paragraphs.
     reader: str (path to .joblib) or .joblib object of an instance of BertQA (BERT model with sklearn wrapper), optional
-    bert_version: str
-        Bert pre-trained model selected in the list: bert-base-uncased,
-        bert-large-uncased, bert-base-cased, bert-large-cased, bert-base-multilingual-uncased,
-        bert-base-multilingual-cased, bert-base-chinese.
+    retrieve_by_doc: bool (default: False). If Retriever will rank by documents
+        or by paragraphs.
     kwargs: kwargs for BertQA(), BertProcessor() and TfidfRetriever()
         Please check documentation for these classes
 
@@ -45,7 +43,7 @@ class QAPipeline(BaseEstimator):
 
     """
 
-    def __init__(self, reader=None, **kwargs):
+    def __init__(self, reader=None, retrieve_by_doc=True, **kwargs):
 
         # Separating kwargs
         kwargs_bertqa = {
@@ -79,32 +77,7 @@ class QAPipeline(BaseEstimator):
 
         self.retriever = TfidfRetriever(**kwargs_retriever)
 
-    def fit(self, X=None, y=None):
-        """ Fit the QAPipeline retriever to a list of documents in a dataframe.
-
-        This function is deprecated and will be removed in a future version of cdQA,
-        please use fit_retriever instead.
-
-        Parameters
-        ----------
-        X: pandas.Dataframe
-            Dataframe with the following columns: "title", "paragraphs"
-
-        """
-
-        warnings.warn(
-            "This function is deprecated and will be removed in a future version of cdQA, \
-        please use fit_retriever instead",
-            DeprecationWarning,
-        )
-
-        self.metadata = X
-        self.metadata["content"] = self.metadata["paragraphs"].apply(
-            lambda x: " ".join(x)
-        )
-        self.retriever.fit(self.metadata["content"])
-
-        return self
+        self.retrieve_by_doc = retrieve_by_doc
 
     def fit_retriever(self, X=None, y=None):
         """ Fit the QAPipeline retriever to a list of documents in a dataframe.
@@ -114,10 +87,14 @@ class QAPipeline(BaseEstimator):
             Dataframe with the following columns: "title", "paragraphs"
         """
 
-        self.metadata = X
-        self.metadata["content"] = self.metadata["paragraphs"].apply(
-            lambda x: " ".join(x)
-        )
+        if self.retrieve_by_doc:
+            self.metadata = X
+            self.metadata["content"] = self.metadata["paragraphs"].apply(
+                lambda x: " ".join(x)
+            )
+        else:
+            self.metadata = self._expand_paragraphs(X)
+
         self.retriever.fit(self.metadata["content"])
 
         return self
@@ -166,6 +143,7 @@ class QAPipeline(BaseEstimator):
                 question=X,
                 closest_docs_indices=closest_docs_indices,
                 metadata=self.metadata,
+                retrieve_by_doc=self.retrieve_by_doc
             )
             examples, features = self.processor_predict.fit_transform(X=squad_examples)
             prediction = self.reader.predict(
@@ -201,7 +179,7 @@ class QAPipeline(BaseEstimator):
             )
 
     def to(self, device):
-        """ Send reader to CPU if device=='cpu' or to GPU if device=='cuda'
+        """ Send reade to CPU if device=='cpu' or to GPU if device=='cuda'
         """
         if device not in ("cpu", "cuda"):
             raise ValueError("Attribute device should be 'cpu' or 'cuda'.")
@@ -223,3 +201,16 @@ class QAPipeline(BaseEstimator):
         self.reader.model.cuda()
         self.reader.device = torch.device("cuda")
         return self
+
+    @staticmethod
+    def _expand_paragraphs(df):
+        # Snippet taken from: https://stackoverflow.com/a/48532692/11514226
+        lst_col = "paragraphs"
+        df = pd.DataFrame(
+            {
+                col: np.repeat(df[col].values, df[lst_col].str.len())
+                for col in df.columns.drop(lst_col)
+            }
+        ).assign(**{lst_col: np.concatenate(df[lst_col].values)})[df.columns]
+        df["content"] = df["paragraphs"]
+        return df.drop("paragraphs", axis=1)

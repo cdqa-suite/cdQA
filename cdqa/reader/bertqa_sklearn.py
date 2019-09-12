@@ -964,7 +964,7 @@ class BertProcessor(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    bert_model : str
+    bert_version : str
         Bert pre-trained model selected in the list: bert-base-uncased,
         bert-large-uncased, bert-base-cased, bert-large-cased, bert-base-multilingual-uncased,
         bert-base-multilingual-cased, bert-base-chinese.

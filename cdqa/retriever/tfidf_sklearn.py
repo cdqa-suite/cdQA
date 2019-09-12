@@ -56,8 +56,7 @@ class TfidfRetriever(BaseEstimator):
     paragraphs : iterable
         an iterable which yields either str, unicode or file objects
     top_n : int
-        maximum number of top articles to retrieve
-        header should be of format: title, paragraphs.
+        maximum number of top articles (or paragraphs) to retrieve
     verbose : bool, optional
         If true, all of the warnings related to data processing will be printed.
 
