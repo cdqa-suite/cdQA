@@ -116,7 +116,7 @@ def evaluate_reader(dataset_file, prediction_file, expected_version="1.1"):
     return evaluate(dataset, predictions)
 
 
-def evaluate_pipeline(cdqa_pipeline, annotated_json, output_dir="./results"):
+def evaluate_pipeline(cdqa_pipeline, annotated_json, output_dir="./results", verbose=True):
     """Evaluation method for a whole pipeline (retriever + reader)
 
     Parameters
@@ -128,6 +128,8 @@ def evaluate_pipeline(cdqa_pipeline, annotated_json, output_dir="./results"):
     output_dir: str
         path to directory where results and predictions will be saved. If None,
         no file will be saved
+    verbose: boolean
+        whether the result should be printed or not
 
     Returns
     -------
@@ -157,8 +159,8 @@ def evaluate_pipeline(cdqa_pipeline, annotated_json, output_dir="./results"):
     if output_dir is not None:
         with open(results_path, "w") as f:
             json.dump(results, f)
-
-    print(results)
+    if verbose:
+        print("\nEvaluation results:", results)
 
     return results
 
