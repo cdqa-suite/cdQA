@@ -12,6 +12,12 @@
 
 An End-To-End Closed Domain Question Answering System.
 
+## cdQA in details
+
+If you are interested in understanding how the system works and it is implemented, we wrote an [article on Medium](https://towardsdatascience.com/how-to-create-your-own-question-answering-system-easily-with-python-2ef8abc8eb5) with a high-level explanation.
+
+We also made a presentation during the \#9 NLP Breakfast organised by [Feedly](feedly.com). You can check out the video of the presentation [here](https://blog.feedly.com/nlp-breakfast-9-closed-domain-question-answering/).
+
 ## Table of Contents <!-- omit in toc -->
 
 - [Installation](#Installation)
