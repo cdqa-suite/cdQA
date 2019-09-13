@@ -8,7 +8,7 @@ def read(file):
 
 setup(
     name="cdqa",
-    version="1.1.4b",
+    version="1.1.4c",
     author="Félix MIKAELIAN, André FARIAS, Matyas AMROUCHE, Olivier SANS, Théo NAZON",
     description="An End-To-End Closed Domain Question Answering System",
     long_description=read("README.md"),

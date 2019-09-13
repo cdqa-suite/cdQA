@@ -133,7 +133,7 @@ cdqa_pipeline.fit_reader('path-to-custom-squad-like-dataset.json')
 Save the reader model after fine-tuning:
 ```python
 cdqa_pipeline.dump_reader('path-to-save-bert-reader.joblib')
-``
+```
 ### Making predictions
 
 To get the best prediction given an input query:
