@@ -179,7 +179,7 @@ class QAPipeline(BaseEstimator):
             )
 
     def to(self, device):
-        """ Send reade to CPU if device=='cpu' or to GPU if device=='cuda'
+        """ Send reader to CPU if device=='cpu' or to GPU if device=='cuda'
         """
         if device not in ("cpu", "cuda"):
             raise ValueError("Attribute device should be 'cpu' or 'cuda'.")
@@ -201,6 +201,11 @@ class QAPipeline(BaseEstimator):
         self.reader.model.cuda()
         self.reader.device = torch.device("cuda")
         return self
+
+    def dump_reader(self, filename):
+        """ Dump reader model to a .joblib object
+        """
+        joblib.dump(self.reader, filename)
 
     @staticmethod
     def _expand_paragraphs(df):

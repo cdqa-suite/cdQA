@@ -14,9 +14,9 @@ An End-To-End Closed Domain Question Answering System.
 
 ## cdQA in details
 
-If you are interested in understanding how the system works and it is implemented, we wrote an [article on Medium](https://towardsdatascience.com/how-to-create-your-own-question-answering-system-easily-with-python-2ef8abc8eb5) with a high-level explanation.
+If you are interested in understanding how the system works and its implementation, we wrote an [article on Medium](https://towardsdatascience.com/how-to-create-your-own-question-answering-system-easily-with-python-2ef8abc8eb5) with a high-level explanation.
 
-We also made a presentation during the \#9 NLP Breakfast organised by [Feedly](feedly.com). You can check out the video of the presentation [here](https://blog.feedly.com/nlp-breakfast-9-closed-domain-question-answering/).
+We also made a presentation during the \#9 NLP Breakfast organised by [Feedly](feedly.com). You can check it out [here](https://blog.feedly.com/nlp-breakfast-9-closed-domain-question-answering/).
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -130,6 +130,10 @@ cdqa_pipeline = QAPipeline(model='bert_qa_vGPU-sklearn.joblib')
 cdqa_pipeline.fit_reader('path-to-custom-squad-like-dataset.json')
 ```
 
+Save the reader model after the fine-tune:
+```python
+cdqa_pipeline.dump_reader('path-to-save-bert-reader.joblib')
+``
 ### Making predictions
 
 To get the best prediction given an input query:
