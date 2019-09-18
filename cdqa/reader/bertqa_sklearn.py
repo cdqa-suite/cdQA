@@ -998,7 +998,7 @@ class BertProcessor(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from cdqa.reader.bertqa_sklearn import BertProcessor
+    >>> from cdqa.reader import BertProcessor
     >>> processor = BertProcessor(bert_model='bert-base-uncased', do_lower_case=True, is_training=False)
     >>> examples, features = processor.fit_transform(X=squad_examples)
 
@@ -1015,7 +1015,7 @@ class BertProcessor(BaseEstimator, TransformerMixin):
         max_query_length=64,
         verbose=False,
         tokenizer=None,
-        n_jobs=-1,
+        n_jobs=1,
     ):
 
         self.bert_model = bert_model
@@ -1131,7 +1131,7 @@ class BertQA(BaseEstimator):
 
     Examples
     --------
-    >>> from cdqa.reader.bertqa_sklearn import BertQA
+    >>> from cdqa.reader import BertQA
     >>> model = BertQA(bert_model='bert-base-uncased',
                 train_batch_size=12,
                 learning_rate=3e-5,

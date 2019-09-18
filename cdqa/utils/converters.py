@@ -100,17 +100,23 @@ def generate_squad_examples(question, closest_docs_indices, metadata, retrieve_b
                     {
                         "context": paragraph,
                         "qas": [
-                            {"answers": [], "question": question, "id": str(uuid.uuid4())}
+                            {
+                                "answers": [],
+                                "question": question,
+                                "id": str(uuid.uuid4()),
+                            }
                         ],
                     }
                 )
         else:
-            temp["paragraphs"]=[{
+            temp["paragraphs"] = [
+                {
                     "context": row["content"],
                     "qas": [
                         {"answers": [], "question": question, "id": str(uuid.uuid4())}
                     ],
-                }]
+                }
+            ]
 
         squad_examples.append(temp)
 

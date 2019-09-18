@@ -5,7 +5,7 @@ import pandas as pd
 from cdqa.utils.filters import filter_paragraphs
 from cdqa.utils.evaluation import evaluate_pipeline
 from cdqa.utils.download import *
-from cdqa.pipeline.cdqa_sklearn import QAPipeline
+from cdqa.pipeline import QAPipeline
 
 
 def test_evaluate_pipeline():

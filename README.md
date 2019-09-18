@@ -115,7 +115,7 @@ Fit the pipeline on your corpus using the pre-trained reader:
 ```python
 import pandas as pd
 from ast import literal_eval
-from cdqa.pipeline.cdqa_sklearn import QAPipeline
+from cdqa.pipeline import QAPipeline
 
 df = pd.read_csv('your-custom-corpus-here.csv', converters={'paragraphs': literal_eval})
 

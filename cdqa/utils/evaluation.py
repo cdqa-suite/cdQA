@@ -116,7 +116,9 @@ def evaluate_reader(dataset_file, prediction_file, expected_version="1.1"):
     return evaluate(dataset, predictions)
 
 
-def evaluate_pipeline(cdqa_pipeline, annotated_json, output_dir="./results", verbose=True):
+def evaluate_pipeline(
+    cdqa_pipeline, annotated_json, output_dir="./results", verbose=True
+):
     """Evaluation method for a whole pipeline (retriever + reader)
 
     Parameters

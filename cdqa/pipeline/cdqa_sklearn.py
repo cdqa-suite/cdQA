@@ -7,9 +7,11 @@ import torch
 
 from sklearn.base import BaseEstimator
 
-from cdqa.retriever.tfidf_sklearn import TfidfRetriever
+from cdqa.retriever import TfidfRetriever, BM25Retriever
 from cdqa.utils.converters import generate_squad_examples
-from cdqa.reader.bertqa_sklearn import BertProcessor, BertQA
+from cdqa.reader import BertProcessor, BertQA
+
+RETRIEVERS = {"bm25": BM25Retriever, "tfidf": TfidfRetriever}
 
 
 class QAPipeline(BaseEstimator):
@@ -22,20 +24,20 @@ class QAPipeline(BaseEstimator):
         dataframe containing your corpus of documents metadata
         header should be of format: title, paragraphs.
     reader: str (path to .joblib) or .joblib object of an instance of BertQA (BERT model with sklearn wrapper), optional
-    retrieve_by_doc: bool (default: False). If Retriever will rank by documents
+    retrieve_by_doc: bool (default: True). If Retriever will rank by documents
         or by paragraphs.
-    kwargs: kwargs for BertQA(), BertProcessor() and TfidfRetriever()
+    kwargs: kwargs for BertQA(), BertProcessor(), TfidfRetriever() and BM25Retriever
         Please check documentation for these classes
 
 
     Examples
     --------
-    >>> from cdqa.pipeline.qa_pipeline import QAPipeline
+    >>> from cdqa.pipeline import QAPipeline
     >>> qa_pipeline = QAPipeline(reader='bert_qa_squad_vCPU-sklearn.joblib')
     >>> qa_pipeline.fit_retriever(X=df)
     >>> prediction = qa_pipeline.predict(X='When BNP Paribas was created?')
 
-    >>> from cdqa.pipeline.qa_pipeline import QAPipeline
+    >>> from cdqa.pipeline import QAPipeline
     >>> qa_pipeline = QAPipeline()
     >>> qa_pipeline.fit_reader('train-v1.1.json')
     >>> qa_pipeline.fit_retriever(X=df)
@@ -43,7 +45,16 @@ class QAPipeline(BaseEstimator):
 
     """
 
-    def __init__(self, reader=None, retrieve_by_doc=True, **kwargs):
+    def __init__(self, reader=None, retriever="bm25", retrieve_by_doc=False, **kwargs):
+
+        if retriever not in RETRIEVERS:
+            raise ValueError(
+                "You provided a type of retriever that is not supported. "
+                + "Please provide a retriver in the following list: "
+                + str(list(RETRIEVERS.keys()))
+            )
+
+        retriever_class = RETRIEVERS[retriever]
 
         # Separating kwargs
         kwargs_bertqa = {
@@ -61,7 +72,7 @@ class QAPipeline(BaseEstimator):
         kwargs_retriever = {
             key: value
             for key, value in kwargs.items()
-            if key in TfidfRetriever.__init__.__code__.co_varnames
+            if key in retriever_class.__init__.__code__.co_varnames
         }
 
         if not reader:
@@ -75,7 +86,7 @@ class QAPipeline(BaseEstimator):
 
         self.processor_predict = BertProcessor(is_training=False, **kwargs_processor)
 
-        self.retriever = TfidfRetriever(**kwargs_retriever)
+        self.retriever = retriever_class(**kwargs_retriever)
 
         self.retrieve_by_doc = retrieve_by_doc
 
@@ -143,7 +154,7 @@ class QAPipeline(BaseEstimator):
                 question=X,
                 closest_docs_indices=closest_docs_indices,
                 metadata=self.metadata,
-                retrieve_by_doc=self.retrieve_by_doc
+                retrieve_by_doc=self.retrieve_by_doc,
             )
             examples, features = self.processor_predict.fit_transform(X=squad_examples)
             prediction = self.reader.predict(
