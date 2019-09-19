@@ -6,7 +6,7 @@ from ast import literal_eval
 import pandas as pd
 
 from cdqa.utils.filters import filter_paragraphs
-from cdqa.pipeline.cdqa_sklearn import QAPipeline
+from cdqa.pipeline import QAPipeline
 
 app = Flask(__name__)
 CORS(app)
@@ -18,7 +18,7 @@ df = pd.read_csv(dataset_path, converters={"paragraphs": literal_eval})
 df = filter_paragraphs(df)
 
 cdqa_pipeline = QAPipeline(reader=reader_path)
-cdqa_pipeline.fit(X=df)
+cdqa_pipeline.fit_retriever(X=df)
 
 
 @app.route("/api", methods=["GET"])
