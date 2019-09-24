@@ -20,15 +20,16 @@ class QAPipeline(BaseEstimator):
 
     Parameters
     ----------
-    metadata: pandas.DataFrame
-        dataframe containing your corpus of documents metadata
-        header should be of format: title, paragraphs.
     reader: str (path to .joblib) or .joblib object of an instance of BertQA (BERT model with sklearn wrapper), optional
+
+    retriever: "bm25" or "tfidf"
+        The type of retriever
+
     retrieve_by_doc: bool (default: True). If Retriever will rank by documents
         or by paragraphs.
+
     kwargs: kwargs for BertQA(), BertProcessor(), TfidfRetriever() and BM25Retriever
         Please check documentation for these classes
-
 
     Examples
     --------
@@ -90,104 +91,101 @@ class QAPipeline(BaseEstimator):
 
         self.retrieve_by_doc = retrieve_by_doc
 
-    def fit_retriever(self, X=None, y=None):
+    def fit_retriever(self, df: pd.DataFrame = None):
         """ Fit the QAPipeline retriever to a list of documents in a dataframe.
-         Parameters
+        Parameters
         ----------
-        X: pandas.Dataframe
+        df: pandas.Dataframe
             Dataframe with the following columns: "title", "paragraphs"
         """
 
         if self.retrieve_by_doc:
-            self.metadata = X
+            self.metadata = df
             self.metadata["content"] = self.metadata["paragraphs"].apply(
                 lambda x: " ".join(x)
             )
         else:
-            self.metadata = self._expand_paragraphs(X)
+            self.metadata = self._expand_paragraphs(df)
 
-        self.retriever.fit(self.metadata["content"])
+        self.retriever.fit(self.metadata)
 
         return self
 
-    def fit_reader(self, X=None, y=None):
+    def fit_reader(self, data=None):
         """ Fit the QAPipeline retriever to a list of documents in a dataframe.
 
         Parameters
         ----------
-        X: pandas.Dataframe
-            Dataframe with the following columns: "title", "paragraphs"
+        data: dict str-path to json file
+             Annotated dataset in squad-like for Reader training
 
         """
 
-        train_examples, train_features = self.processor_train.fit_transform(X)
+        train_examples, train_features = self.processor_train.fit_transform(data)
         self.reader.fit(X=(train_examples, train_features))
 
         return self
 
-    def predict(self, X=None, return_logit=False, n_predictions=None):
+    def predict(
+        self,
+        query: str = None,
+        n_predictions: int = None,
+        retriever_score_weight: float = 0.35,
+        return_all_preds: bool = False,
+    ):
         """ Compute prediction of an answer to a question
 
         Parameters
         ----------
-        X: str or list of strings
-            Sample (question) or list of samples to perform a prediction on
+        X: str
+            Sample (question) to perform a prediction on
 
-        return_logit: boolean
-            Whether to return logit of best answer or not. Default: False
+        n_predictions: int or None (default: None).
+            Number of returned predictions. If None, only one prediction is return
+
+        retriever_score_weight: float (default: 0.35).
+            The weight of retriever score in the final score used for prediction.
+            Given retriever score and reader average of start and end logits, the final score used for ranking is:
+
+            final_score = retriever_score_weight * retriever_score + (1 - retriever_score_weight) * (reader_avg_logit)
+
+        return_all_preds: boolean (default: False)
+            whether to return a list of all predictions done by the Reader or not
 
         Returns
         -------
-        If X is str
-        prediction: tuple (answer, title, paragraph)
+        if return_all_preds is False:
+        prediction: tuple (answer, title, paragraph, score/logit)
 
-        If X is list os strings
-        predictions: list of tuples (answer, title, paragraph)
-
-        If return_logits is True, each prediction tuple will have the following
-        structure: (answer, title, paragraph, best logit)
+        if return_all_preds is True:
+        List of dictionnaries with all metadada of all answers outputted by the Reader
+        given the question.
 
         """
-        if isinstance(X, str):
-            closest_docs_indices = self.retriever.predict(X, metadata=self.metadata)
-            squad_examples = generate_squad_examples(
-                question=X,
-                closest_docs_indices=closest_docs_indices,
-                metadata=self.metadata,
-                retrieve_by_doc=self.retrieve_by_doc,
-            )
-            examples, features = self.processor_predict.fit_transform(X=squad_examples)
-            prediction = self.reader.predict(
-                (examples, features), return_logit, n_predictions
-            )
-            return prediction
 
-        elif isinstance(X, list):
-            predictions = []
-            for query in X:
-                closest_docs_indices = self.retriever.predict(
-                    query, metadata=self.metadata
-                )
-                squad_examples = generate_squad_examples(
-                    question=query,
-                    closest_docs_indices=closest_docs_indices,
-                    metadata=self.metadata,
-                )
-                examples, features = self.processor_predict.fit_transform(
-                    X=squad_examples
-                )
-                pred = self.reader.predict(
-                    (examples, features), return_logit, n_predictions
-                )
-                predictions.append(pred)
-
-            return predictions
-
-        else:
+        if not isinstance(query, str):
             raise TypeError(
-                "The input is not a string or a list. \
-                            Please provide a string or a list of strings as input"
+                "The input is not a string. Please provide a string as input."
             )
+        if not (
+            isinstance(n_predictions, int) or n_predictions is None or n_predictions < 1
+        ):
+            raise TypeError("n_predictions should be a positive Integer or None")
+        best_idx_scores = self.retriever.predict(query)
+        squad_examples = generate_squad_examples(
+            question=query,
+            best_idx_scores=best_idx_scores,
+            metadata=self.metadata,
+            retrieve_by_doc=self.retrieve_by_doc,
+        )
+        examples, features = self.processor_predict.fit_transform(X=squad_examples)
+        prediction = self.reader.predict(
+            X=(examples, features),
+            n_predictions=n_predictions,
+            retriever_score_weight=retriever_score_weight,
+            return_all_preds=return_all_preds,
+        )
+        return prediction
 
     def to(self, device):
         """ Send reader to CPU if device=='cpu' or to GPU if device=='cuda'

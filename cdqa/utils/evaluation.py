@@ -56,7 +56,7 @@ def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
     return max(scores_for_ground_truths)
 
 
-def evaluate(dataset, predictions):
+def evaluate(dataset, predictions, unique_pred=True):
     f1 = exact_match = total = 0
     for article in dataset:
         for paragraph in article["paragraphs"]:
@@ -69,11 +69,35 @@ def evaluate(dataset, predictions):
                     print(message, file=sys.stderr)
                     continue
                 ground_truths = list(map(lambda x: x["text"], qa["answers"]))
-                prediction = predictions[qa["id"]]
-                exact_match += metric_max_over_ground_truths(
-                    exact_match_score, prediction, ground_truths
-                )
-                f1 += metric_max_over_ground_truths(f1_score, prediction, ground_truths)
+                if unique_pred:
+                    prediction = predictions[qa["id"]]
+                    increm_em = metric_max_over_ground_truths(
+                        exact_match_score, prediction, ground_truths
+                    )
+                    increm_f1 = metric_max_over_ground_truths(
+                        f1_score, prediction, ground_truths
+                    )
+                else:
+                    preds = predictions[qa["id"]]
+                    increm_em = max(
+                        [
+                            metric_max_over_ground_truths(
+                                exact_match_score, prediction, ground_truths
+                            )
+                            for prediction in preds
+                        ]
+                    )
+                    increm_f1 = max(
+                        [
+                            metric_max_over_ground_truths(
+                                f1_score, prediction, ground_truths
+                            )
+                            for prediction in preds
+                        ]
+                    )
+
+                exact_match += increm_em
+                f1 += increm_f1
 
     exact_match = 100.0 * exact_match / total
     f1 = 100.0 * f1 / total
@@ -117,7 +141,11 @@ def evaluate_reader(dataset_file, prediction_file, expected_version="1.1"):
 
 
 def evaluate_pipeline(
-    cdqa_pipeline, annotated_json, output_dir="./results", verbose=True
+    cdqa_pipeline,
+    annotated_json,
+    output_dir="./results",
+    n_predictions=None,
+    verbose=True,
 ):
     """Evaluation method for a whole pipeline (retriever + reader)
 
@@ -152,12 +180,13 @@ def evaluate_pipeline(
         data_dict = json.load(file)
 
     queries = _get_queries_list(data_dict)
-    all_predictions = _pipeline_predictions(cdqa_pipeline, queries)
+    all_predictions = _pipeline_predictions(cdqa_pipeline, queries, n_predictions)
     if output_dir is not None:
         with open(preds_path, "w") as f:
             json.dump(all_predictions, f)
 
-    results = evaluate(data_dict["data"], all_predictions)
+    unique_pred = n_predictions is None
+    results = evaluate(data_dict["data"], all_predictions, unique_pred)
     if output_dir is not None:
         with open(results_path, "w") as f:
             json.dump(results, f)
@@ -183,10 +212,13 @@ def _get_queries_list(data_dict):
     return queries
 
 
-def _pipeline_predictions(cdqa_pipeline, queries):
+def _pipeline_predictions(cdqa_pipeline, queries, n_predictions=None):
 
     all_predictions = dict()
     for id, query in tqdm(queries):
-        all_predictions[id] = cdqa_pipeline.predict(X=query)[0]
-
+        if n_predictions is None:
+            all_predictions[id] = cdqa_pipeline.predict(query)[0]
+        else:
+            preds = cdqa_pipeline.predict(query, n_predictions=n_predictions)
+            all_predictions[id] = [pred[0] for pred in preds]
     return all_predictions

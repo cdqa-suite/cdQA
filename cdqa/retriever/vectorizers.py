@@ -146,7 +146,7 @@ class BM25Vectorizer(CountVectorizer):
 
     b : float, optional (default=0.75)
         term b in the BM25 formula
-        
+
     floor : float or None, optional (default=None)
         floor value for idf terms
 
@@ -168,6 +168,7 @@ class BM25Vectorizer(CountVectorizer):
 
         This is only available if no vocabulary was given.
     """
+
     def __init__(
         self,
         input="content",
@@ -282,19 +283,40 @@ class BM25Vectorizer(CountVectorizer):
         self._bm25.fit(X)
         return self
 
-    def transform(self, queries):
+    def transform(self, raw_corpus, is_query=False):
         """
-        Rank the documents based on the queries
+        Vectorizes the input, whether it is a query or the list of documents
 
         Parameters
         ----------
-        queries : iterable
+        raw_corpus : iterable
             an iterable which yields either str, unicode or file objects
 
         Returns
         -------
-        scores : sparse matrix, [n_queries, n_documents]
+        vectors : sparse matrix, [n_queries, n_documents]
             scores from BM25 statics for each document with respect to each query
         """
-        X = super().transform(queries)
+        X = super().transform(raw_corpus) if is_query else None
+
+        return self._bm25.transform(X, copy=False, is_query=is_query)
+
+    def fit_transform(self, raw_documents, y=None):
+        """
+        Learn vocabulary, idf and BM25 features. Return term-document matrix.
+        This is equivalent to fit followed by transform, but more efficiently
+        implemented.
+
+        Parameters
+        ----------
+        raw_documents : iterable
+            an iterable which yields either str, unicode or file objects
+            
+        Returns
+        -------
+        X : sparse matrix, [n_samples, n_features]
+            BM25 document-term matrix.
+        """
+        X = super().fit_transform(raw_documents)
+        self._bm25.fit(X)
         return self._bm25.transform(X, copy=False)

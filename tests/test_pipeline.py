@@ -1,5 +1,6 @@
 from ast import literal_eval
 import pandas as pd
+import torch
 
 from cdqa.utils.filters import filter_paragraphs
 from cdqa.utils.download import *
@@ -16,17 +17,19 @@ def execute_pipeline(query, n_predictions=None):
     df = filter_paragraphs(df)
 
     cdqa_pipeline = QAPipeline(reader="models/bert_qa_vCPU-sklearn.joblib")
-    cdqa_pipeline.fit_retriever(X=df)
+    cdqa_pipeline.fit_retriever(df)
+    if torch.cuda.is_available():
+        cdqa_pipeline.cuda()
     if n_predictions is not None:
-        predictions = cdqa_pipeline.predict(X=query, n_predictions=n_predictions)
+        predictions = cdqa_pipeline.predict(query, n_predictions=n_predictions)
         result = []
 
-        for answer, title, paragraph in predictions:
+        for answer, title, paragraph, score in predictions:
             prediction = (answer, title)
             result.append(prediction)
         return result
     else:
-        prediction = cdqa_pipeline.predict(X=query)
+        prediction = cdqa_pipeline.predict(query)
         result = (prediction[0], prediction[1])
         return result
 

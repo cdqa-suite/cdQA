@@ -119,40 +119,44 @@ class BM25Transformer(BaseEstimator, TransformerMixin):
         self._doc_matrix = X
         return self
 
-    def transform(self, X, copy=True):
+    def transform(self, X=None, copy=True, is_query=False):
         """
         Parameters
         ----------
         X : sparse matrix, [n_samples, n_features]
             document-term query matrix
         copy : boolean, optional (default=True)
+        query: boolean (default=False)
+            whether to transform a query or the documents database
 
         Returns
         -------
-        scores : sparse matrix, [n_queries, n_documents]
-            scores from BM25 statics for each document with respect to each query
+        vectors : sparse matrix, [n_samples, n_features]
 
         """
-        X = check_array(X, accept_sparse="csr", dtype=FLOAT_DTYPES, copy=copy)
-        if not sp.issparse(X):
-            X = sp.csr_matrix(X, dtype=np.float64)
+        if is_query:
+            X = check_array(X, accept_sparse="csr", dtype=FLOAT_DTYPES, copy=copy)
+            if not sp.issparse(X):
+                X = sp.csr_matrix(X, dtype=np.float64)
 
-        n_samples, n_features = X.shape
+            n_samples, n_features = X.shape
 
-        expected_n_features = self._doc_matrix.shape[1]
-        if n_features != expected_n_features:
-            raise ValueError(
-                "Input has n_features=%d while the model"
-                " has been trained with n_features=%d"
-                % (n_features, expected_n_features)
-            )
+            expected_n_features = self._doc_matrix.shape[1]
+            if n_features != expected_n_features:
+                raise ValueError(
+                    "Input has n_features=%d while the model"
+                    " has been trained with n_features=%d"
+                    % (n_features, expected_n_features)
+                )
 
-        if self.use_idf:
-            check_is_fitted(self, "_idf_diag", "idf vector is not fitted")
-            X = sp.csr_matrix(X.toarray() * self._idf_diag.diagonal())
+            if self.use_idf:
+                check_is_fitted(self, "_idf_diag", "idf vector is not fitted")
+                X = sp.csr_matrix(X.toarray() * self._idf_diag.diagonal())
 
-        scores = X @ self._doc_matrix.T
-        return scores
+            return X
+
+        else:
+            return self._doc_matrix
 
     @property
     def idf_(self):

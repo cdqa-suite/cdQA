@@ -1,12 +1,86 @@
 import pandas as pd
 import prettytable
 import time
+from abc import ABC, abstractmethod
+from collections import OrderedDict
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.base import BaseEstimator
 from .vectorizers import BM25Vectorizer
 
 
-class TfidfRetriever(BaseEstimator):
+class BaseRetriever(BaseEstimator, ABC):
+    """
+    Abstract base class for all Retriever classes.
+    All retrievers should inherit from this class.
+    Each retriever class should implement a _fit_vectorizer method and a
+    _compute_scores method
+    """
+
+    def __init__(self, vectorizer, top_n=10, verbose=False):
+        self.vectorizer = vectorizer
+        self.top_n = top_n
+        self.verbose = verbose
+
+    def fit(self, df: pd.DataFrame, y=None):
+        """
+        Fit the retriever to a list of documents or paragraphs
+
+        Parameters
+        ----------
+        df: pandas.DataFrame object with all documents
+        """
+        self.metadata = df
+        return self._fit_vectorizer(df)
+
+    @abstractmethod
+    def _fit_vectorizer(self, df):
+        pass
+
+    @abstractmethod
+    def _compute_scores(self, query):
+        pass
+
+    def predict(self, query: str) -> OrderedDict:
+        """
+        Compute the top_n closest documents given a query
+
+        Parameters
+        ----------
+        query: str
+
+        Returns
+        -------
+        best_idx_scores: OrderedDict
+            Dictionnaire with top_n best scores and idices of the documents as keys
+
+        """
+        t0 = time.time()
+        scores = self._compute_scores(query)
+        idx_scores = [(idx, score) for idx, score in enumerate(scores)]
+        best_idx_scores = OrderedDict(
+            sorted(idx_scores, key=(lambda tup: tup[1]), reverse=True)[: self.top_n]
+        )
+
+        # inspired from https://github.com/facebookresearch/DrQA/blob/50d0e49bb77fe0c6e881efb4b6fe2e61d3f92509/scripts/reader/interactive.py#L63
+        if self.verbose:
+            rank = 1
+            table = prettytable.PrettyTable(["rank", "index", "title"])
+            for i in range(len(closest_docs_indices)):
+                index = closest_docs_indices[i]
+                if self.paragraphs:
+                    article_index = self.paragraphs[int(index)]["index"]
+                    title = self.metadata.iloc[int(article_index)]["title"]
+                else:
+                    title = self.metadata.iloc[int(index)]["title"]
+                table.add_row([rank, index, title])
+                rank += 1
+            print(table)
+            print("Time: {} seconds".format(round(time.time() - t0, 5)))
+
+        return best_idx_scores
+
+
+class TfidfRetriever(BaseRetriever):
     """
     A scikit-learn estimator for TfidfRetriever. Trains a tf-idf matrix from a corpus
     of documents then finds the most N similar documents of a given input document by
@@ -73,18 +147,8 @@ class TfidfRetriever(BaseEstimator):
     >>> from cdqa.retriever import TfidfRetriever
 
     >>> retriever = TfidfRetriever(ngram_range=(1, 2), max_df=0.85, stop_words='english')
-    >>> retriever.fit(X=df['content'])
-    >>> closest_docs_indices = retriever.predict(X='Since when does the the Excellence Program of BNP Paribas exist?')
-
-    >>> paragraphs = []
-    >>> for index, row in tqdm(df.iterrows()):
-    >>>     for paragraph in row['paragraphs']:
-    >>>         paragraphs.append({'index': index, 'context': paragraph})
-
-    >>> retriever = TfidfRetriever(ngram_range=(1, 2), max_df=0.85, stop_words='english')
-    >>> retriever.fit(X=[paragraph['context'] for paragraph in paragraphs])
-    >>> closest_docs_indices = retriever.predict(X='Since when does the the Excellence Program of BNP Paribas exist?')
-
+    >>> retriever.fit(X=df)
+    >>> best_idx_scores = retriever.predict(X='Since when does the the Excellence Program of BNP Paribas exist?')
     """
 
     def __init__(
@@ -98,11 +162,9 @@ class TfidfRetriever(BaseEstimator):
         max_df=0.85,
         min_df=2,
         vocabulary=None,
-        paragraphs=None,
         top_n=20,
         verbose=False,
     ):
-
         self.lowercase = lowercase
         self.preprocessor = preprocessor
         self.tokenizer = tokenizer
@@ -112,13 +174,8 @@ class TfidfRetriever(BaseEstimator):
         self.max_df = max_df
         self.min_df = min_df
         self.vocabulary = vocabulary
-        self.paragraphs = paragraphs
-        self.top_n = top_n
-        self.verbose = verbose
 
-    def fit(self, X, y=None):
-
-        self.vectorizer = TfidfVectorizer(
+        vectorizer = TfidfVectorizer(
             lowercase=self.lowercase,
             preprocessor=self.preprocessor,
             tokenizer=self.tokenizer,
@@ -129,39 +186,19 @@ class TfidfRetriever(BaseEstimator):
             min_df=self.min_df,
             vocabulary=self.vocabulary,
         )
-        self.tfidf_matrix = self.vectorizer.fit_transform(X)
+        super().__init__(vectorizer, top_n, verbose)
 
+    def _fit_vectorizer(self, df, y=None):
+        self.tfidf_matrix = self.vectorizer.fit_transform(df["content"])
         return self
 
-    def predict(self, X, metadata):
-
-        t0 = time.time()
-        question_vector = self.vectorizer.transform([X])
-        scores = pd.DataFrame(self.tfidf_matrix.dot(question_vector.T).toarray())
-        closest_docs_indices = (
-            scores.sort_values(by=0, ascending=False).index[: self.top_n].values
-        )
-
-        # inspired from https://github.com/facebookresearch/DrQA/blob/50d0e49bb77fe0c6e881efb4b6fe2e61d3f92509/scripts/reader/interactive.py#L63
-        if self.verbose:
-            rank = 1
-            table = prettytable.PrettyTable(["rank", "index", "title"])
-            for i in range(len(closest_docs_indices)):
-                index = closest_docs_indices[i]
-                if self.paragraphs:
-                    article_index = self.paragraphs[int(index)]["index"]
-                    title = metadata.iloc[int(article_index)]["title"]
-                else:
-                    title = metadata.iloc[int(index)]["title"]
-                table.add_row([rank, index, title])
-                rank += 1
-            print(table)
-            print("Time: {} seconds".format(round(time.time() - t0, 5)))
-
-        return closest_docs_indices
+    def _compute_scores(self, query):
+        question_vector = self.vectorizer.transform([query])
+        scores = self.tfidf_matrix.dot(question_vector.T).toarray()
+        return scores
 
 
-class BM25Retriever(BaseEstimator):
+class BM25Retriever(BaseRetriever):
     """
     A scikit-learn estimator for BM25Retriever. Trains a matrix based on BM25 statistics
     from a corpus of documents then finds the most N similar documents of a given input
@@ -231,17 +268,8 @@ class BM25Retriever(BaseEstimator):
     >>> from cdqa.retriever import BM25Retriever
 
     >>> retriever = BM25Retriever(ngram_range=(1, 2), max_df=0.85, stop_words='english')
-    >>> retriever.fit(X=df['content'])
-    >>> closest_docs_indices = retriever.predict(X='Since when does the the Excellence Program of BNP Paribas exist?')
-
-    >>> paragraphs = []
-    >>> for index, row in tqdm(df.iterrows()):
-    >>>     for paragraph in row['paragraphs']:
-    >>>         paragraphs.append({'index': index, 'context': paragraph})
-
-    >>> retriever = BM25Retriever(ngram_range=(1, 2), max_df=0.85, stop_words='english')
-    >>> retriever.fit(X=[paragraph['context'] for paragraph in paragraphs])
-    >>> closest_docs_indices = retriever.predict(X='Since when does the the Excellence Program of BNP Paribas exist?')
+    >>> retriever.fit(df=df)
+    >>> best_idx_scores = retriever.predict(query='Since when does the the Excellence Program of BNP Paribas exist?')
 
     """
 
@@ -256,7 +284,6 @@ class BM25Retriever(BaseEstimator):
         max_df=0.85,
         min_df=2,
         vocabulary=None,
-        paragraphs=None,
         top_n=20,
         verbose=False,
         k1=2.0,
@@ -273,16 +300,11 @@ class BM25Retriever(BaseEstimator):
         self.max_df = max_df
         self.min_df = min_df
         self.vocabulary = vocabulary
-        self.paragraphs = paragraphs
-        self.top_n = top_n
-        self.verbose = verbose
         self.k1 = k1
         self.b = b
         self.floor = floor
 
-    def fit(self, X, y=None):
-
-        self.vectorizer = BM25Vectorizer(
+        vectorizer = BM25Vectorizer(
             lowercase=self.lowercase,
             preprocessor=self.preprocessor,
             tokenizer=self.tokenizer,
@@ -296,31 +318,13 @@ class BM25Retriever(BaseEstimator):
             b=self.b,
             floor=self.floor,
         )
-        self.vectorizer.fit(X)
+        super().__init__(vectorizer, top_n, verbose)
 
+    def _fit_vectorizer(self, df, y=None):
+        self.bm25_matrix = self.vectorizer.fit_transform(df["content"])
         return self
 
-    def predict(self, X, metadata):
-
-        t0 = time.time()
-        scores = pd.DataFrame(self.vectorizer.transform([X]).toarray().squeeze())
-        closest_docs_indices = (
-            scores.sort_values(by=0, ascending=False).index[: self.top_n].values
-        )
-
-        if self.verbose:
-            rank = 1
-            table = prettytable.PrettyTable(["rank", "index", "title"])
-            for i in range(len(closest_docs_indices)):
-                index = closest_docs_indices[i]
-                if self.paragraphs:
-                    article_index = self.paragraphs[int(index)]["index"]
-                    title = metadata.iloc[int(article_index)]["title"]
-                else:
-                    title = metadata.iloc[int(index)]["title"]
-                table.add_row([rank, index, title])
-                rank += 1
-            print(table)
-            print("Time: {} seconds".format(round(time.time() - t0, 5)))
-
-        return closest_docs_indices
+    def _compute_scores(self, query):
+        question_vector = self.vectorizer.transform([query], is_query=True)
+        scores = self.bm25_matrix.dot(question_vector.T).toarray()
+        return scores

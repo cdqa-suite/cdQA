@@ -120,7 +120,7 @@ from cdqa.pipeline import QAPipeline
 df = pd.read_csv('your-custom-corpus-here.csv', converters={'paragraphs': literal_eval})
 
 cdqa_pipeline = QAPipeline(model='bert_qa_vCPU-sklearn.joblib')
-cdqa_pipeline.fit_retriever(X=df)
+cdqa_pipeline.fit_retriever(df=df)
 ```
 
 If you want to fine-tune the reader on your custom SQuAD-like annotated dataset:
@@ -139,7 +139,19 @@ cdqa_pipeline.dump_reader('path-to-save-bert-reader.joblib')
 To get the best prediction given an input query:
 
 ```python
-cdqa_pipeline.predict(X='your question here')
+cdqa_pipeline.predict(query='your question')
+```
+
+To get the N best predictions:
+```python
+cdqa_pipeline.predict(query='your questio', n_predictions=N)
+```
+
+There is also the possibility to change the weight of the retriever score
+versus the reader score in the computation of final ranking score (the default is 0.35, which is shown to be the best weight on the development set of SQuAD 1.1-open)
+
+```python
+cdqa_pipeline.predict(query='your question', retriever_score_weight=0.35)
 ```
 
 ### Evaluating models

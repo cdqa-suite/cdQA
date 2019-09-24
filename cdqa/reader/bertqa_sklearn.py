@@ -75,6 +75,7 @@ class SquadExample(object):
         is_impossible=None,
         paragraph=None,
         title=None,
+        retriever_score=None,
     ):
         self.qas_id = qas_id
         self.question_text = question_text
@@ -85,6 +86,7 @@ class SquadExample(object):
         self.is_impossible = is_impossible
         self.paragraph = paragraph
         self.title = title
+        self.retriever_score = retriever_score
 
     def __str__(self):
         return self.__repr__()
@@ -196,6 +198,10 @@ def _read_entry_parallel(args_tuple):
         for qa in paragraph["qas"]:
             qas_id = qa["id"]
             question_text = qa["question"]
+            try:
+                retriever_score = qa["retriever_score"]
+            except KeyError:
+                retriever_score = 0
             start_position = None
             end_position = None
             orig_answer_text = None
@@ -251,6 +257,7 @@ def _read_entry_parallel(args_tuple):
                     is_impossible=is_impossible,
                     paragraph=paragraph_text,
                     title=entry["title"],
+                    retriever_score=retriever_score,
                 )
             )
     return examples
@@ -573,9 +580,15 @@ def write_predictions(
     verbose_logging,
     version_2_with_negative,
     null_score_diff_threshold,
+    retriever_score_weight,
     n_predictions=None,
 ):
-    """Write final predictions to the json file and log-odds of null if needed."""
+    """
+    Write final predictions to the json file and log-odds of null if needed.
+    It returns:
+        - if n_predictions == None: a tuple (best_prediction, final_predictions)
+        - if n_predictions != None: a tuple (best_prediction, final_predictions, n_best_predictions_list)
+    """
     if verbose_logging:
         logger.info("Writing predictions to: %s" % (output_prediction_file))
         logger.info("Writing nbest to: %s" % (output_nbest_file))
@@ -596,7 +609,7 @@ def write_predictions(
     all_predictions = collections.OrderedDict()
     all_nbest_json = collections.OrderedDict()
     scores_diff_json = collections.OrderedDict()
-    final_predictions = collections.OrderedDict()
+    final_predictions = []
 
     for (example_index, example) in enumerate(all_examples):
         features = example_index_to_features[example_index]
@@ -743,7 +756,7 @@ def write_predictions(
 
         nbest_json = []
         for (i, entry) in enumerate(nbest):
-            output = collections.OrderedDict()
+            output = {}
             output["text"] = entry.text
             output["probability"] = probs[i]
             output["start_logit"] = entry.start_logit
@@ -768,30 +781,34 @@ def write_predictions(
                 all_predictions[example.qas_id] = best_non_null_entry.text
                 all_nbest_json[example.qas_id] = nbest_json
 
-        final_predictions[example.qas_id] = nbest_json[0]
+        best_dict = nbest_json[0]
+        best_dict["qas_id"] = example.qas_id
+        best_dict["title"] = example.title
+        best_dict["paragraph"] = example.paragraph
+        best_dict["retriever_score"] = example.retriever_score
+        best_dict["final_score"] = (1 - retriever_score_weight) * (
+            best_dict["start_logit"] + best_dict["end_logit"]
+        ) + retriever_score_weight * best_dict["retriever_score"]
+        final_predictions.append(best_dict)
 
-    final_predictions_sorted = collections.OrderedDict(
-        sorted(
-            final_predictions.items(),
-            key=lambda item: item[1]["start_logit"] + item[1]["end_logit"],
-            reverse=True,
+    final_predictions_sorted = sorted(
+        final_predictions, key=lambda d: d["final_score"], reverse=True
+    )
+
+    best_prediction = (
+        final_predictions_sorted[0]["text"],
+        final_predictions_sorted[0]["title"],
+        final_predictions_sorted[0]["paragraph"],
+        final_predictions_sorted[0]["final_score"],
+    )
+
+    return_list = [best_prediction, final_predictions_sorted]
+
+    if n_predictions:
+        n_best_predictions_list = _n_best_predictions(
+            final_predictions_sorted, n_predictions
         )
-    )
-
-    question_id = list(final_predictions_sorted.items())[0][0]
-    title = [e for e in all_examples if e.qas_id == question_id][0].title
-    paragraph = [e for e in all_examples if e.qas_id == question_id][0].paragraph
-
-    final_prediction = (
-        list(final_predictions_sorted.items())[0][1]["text"],
-        title,
-        paragraph,
-    )
-
-    best_logit = (
-        list(final_predictions_sorted.items())[0][1]["start_logit"]
-        + list(final_predictions_sorted.items())[0][1]["end_logit"]
-    )
+        return_list.append(n_best_predictions_list)
 
     if output_prediction_file:
         with open(output_prediction_file, "w") as writer:
@@ -799,30 +816,11 @@ def write_predictions(
     if output_nbest_file:
         with open(output_nbest_file, "w") as writer:
             writer.write(json.dumps(all_nbest_json, indent=4) + "\n")
-
     if version_2_with_negative and output_null_log_odds_file:
         with open(output_null_log_odds_file, "w") as writer:
             writer.write(json.dumps(scores_diff_json, indent=4) + "\n")
-    if n_predictions:
-        n_best_predictions_list = n_best_predictions(
-            final_predictions_sorted, all_examples, n_predictions
-        )
-        return (
-            final_prediction,
-            all_predictions,
-            all_nbest_json,
-            scores_diff_json,
-            best_logit,
-            n_best_predictions_list,
-        )
-    else:
-        return (
-            final_prediction,
-            all_predictions,
-            all_nbest_json,
-            scores_diff_json,
-            best_logit,
-        )
+
+    return tuple(return_list)
 
 
 def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
@@ -1259,19 +1257,6 @@ class BertQA(BaseEstimator):
         if self.output_dir and not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
-        num_train_optimization_steps = (
-            int(
-                len(train_examples)
-                / self.train_batch_size
-                / self.gradient_accumulation_steps
-            )
-            * self.num_train_epochs
-        )
-        if self.local_rank != -1:
-            num_train_optimization_steps = (
-                num_train_optimization_steps // torch.distributed.get_world_size()
-            )
-
         if self.fp16:
             self.model.half()
         self.model.to(self.device)
@@ -1286,6 +1271,49 @@ class BertQA(BaseEstimator):
             self.model = DDP(self.model)
         elif self.n_gpu > 1:
             self.model = torch.nn.DataParallel(self.model)
+
+        global_step = 0
+
+        if self.verbose_logging:
+            logger.info("***** Running training *****")
+            logger.info("  Num orig examples = %d", len(train_examples))
+            logger.info("  Num split examples = %d", len(train_features))
+            logger.info("  Batch size = %d", self.train_batch_size)
+            logger.info("  Num steps = %d", num_train_optimization_steps)
+        all_input_ids = torch.tensor(
+            [f.input_ids for f in train_features], dtype=torch.long
+        )
+        all_input_mask = torch.tensor(
+            [f.input_mask for f in train_features], dtype=torch.long
+        )
+        all_segment_ids = torch.tensor(
+            [f.segment_ids for f in train_features], dtype=torch.long
+        )
+        all_start_positions = torch.tensor(
+            [f.start_position for f in train_features], dtype=torch.long
+        )
+        all_end_positions = torch.tensor(
+            [f.end_position for f in train_features], dtype=torch.long
+        )
+        train_data = TensorDataset(
+            all_input_ids,
+            all_input_mask,
+            all_segment_ids,
+            all_start_positions,
+            all_end_positions,
+        )
+        if self.local_rank == -1:
+            train_sampler = RandomSampler(train_data)
+        else:
+            train_sampler = DistributedSampler(train_data)
+        train_dataloader = DataLoader(
+            train_data, sampler=train_sampler, batch_size=self.train_batch_size
+        )
+
+        num_train_optimization_steps = len(train_dataloader) // self.gradient_accumulation_steps * self.num_train_epochs
+
+        if self.local_rank != -1:
+            num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
 
         # Prepare optimizer
         param_optimizer = list(self.model.named_parameters())
@@ -1343,44 +1371,6 @@ class BertQA(BaseEstimator):
                 warmup=self.warmup_proportion,
                 t_total=num_train_optimization_steps,
             )
-
-        global_step = 0
-
-        if self.verbose_logging:
-            logger.info("***** Running training *****")
-            logger.info("  Num orig examples = %d", len(train_examples))
-            logger.info("  Num split examples = %d", len(train_features))
-            logger.info("  Batch size = %d", self.train_batch_size)
-            logger.info("  Num steps = %d", num_train_optimization_steps)
-        all_input_ids = torch.tensor(
-            [f.input_ids for f in train_features], dtype=torch.long
-        )
-        all_input_mask = torch.tensor(
-            [f.input_mask for f in train_features], dtype=torch.long
-        )
-        all_segment_ids = torch.tensor(
-            [f.segment_ids for f in train_features], dtype=torch.long
-        )
-        all_start_positions = torch.tensor(
-            [f.start_position for f in train_features], dtype=torch.long
-        )
-        all_end_positions = torch.tensor(
-            [f.end_position for f in train_features], dtype=torch.long
-        )
-        train_data = TensorDataset(
-            all_input_ids,
-            all_input_mask,
-            all_segment_ids,
-            all_start_positions,
-            all_end_positions,
-        )
-        if self.local_rank == -1:
-            train_sampler = RandomSampler(train_data)
-        else:
-            train_sampler = DistributedSampler(train_data)
-        train_dataloader = DataLoader(
-            train_data, sampler=train_sampler, batch_size=self.train_batch_size
-        )
 
         self.model.train()
         for _ in trange(int(self.num_train_epochs), desc="Epoch"):
@@ -1440,7 +1430,9 @@ class BertQA(BaseEstimator):
 
         return self
 
-    def predict(self, X, return_logit=False, n_predictions=None):
+    def predict(
+        self, X, n_predictions=None, retriever_score_weight=0.35, return_all_preds=False
+    ):
 
         eval_examples, eval_features = X
         if self.verbose_logging:
@@ -1505,66 +1497,44 @@ class BertQA(BaseEstimator):
             output_prediction_file = None
             output_nbest_file = None
             output_null_log_odds_file = None
+
+        result_tuple = write_predictions(
+            eval_examples,
+            eval_features,
+            all_results,
+            self.n_best_size,
+            self.max_answer_length,
+            self.do_lower_case,
+            output_prediction_file,
+            output_nbest_file,
+            output_null_log_odds_file,
+            self.verbose_logging,
+            self.version_2_with_negative,
+            self.null_score_diff_threshold,
+            retriever_score_weight,
+            n_predictions,
+        )
+
         if n_predictions is not None:
-            final_prediction, all_predictions, all_nbest_json, scores_diff_json, best_logit, n_best_predictions_list = write_predictions(
-                eval_examples,
-                eval_features,
-                all_results,
-                self.n_best_size,
-                self.max_answer_length,
-                self.do_lower_case,
-                output_prediction_file,
-                output_nbest_file,
-                output_null_log_odds_file,
-                self.verbose_logging,
-                self.version_2_with_negative,
-                self.null_score_diff_threshold,
-                n_predictions,
-            )
-            return n_best_predictions_list
+            return result_tuple[-1]
 
-        else:
-            final_prediction, all_predictions, all_nbest_json, scores_diff_json, best_logit = write_predictions(
-                eval_examples,
-                eval_features,
-                all_results,
-                self.n_best_size,
-                self.max_answer_length,
-                self.do_lower_case,
-                output_prediction_file,
-                output_nbest_file,
-                output_null_log_odds_file,
-                self.verbose_logging,
-                self.version_2_with_negative,
-                self.null_score_diff_threshold,
-            )
+        best_prediction, final_predictions = result_tuple
 
-            if return_logit:
-                return (*final_prediction, best_logit)
-            else:
-                return final_prediction
+        if return_all_preds:
+            return final_predictions
+
+        return best_prediction
 
 
-def n_best_predictions(final_predictions_sorted, all_examples, n):
-    question_id_list = [
-        list(final_predictions_sorted.items())[i][0]
-        for i in range(len(list(final_predictions_sorted.items())))
-    ]
-    final_prediction_list = [
-        list(final_predictions_sorted.items())[i][1]["text"]
-        for i in range(len(list(final_predictions_sorted.items())))
-    ]
-    title_list = [
-        [e][0].title for q in question_id_list for e in all_examples if e.qas_id == q
-    ]
-    paragraph_list = [
-        [e][0].paragraph
-        for q in question_id_list
-        for e in all_examples
-        if e.qas_id == q
-    ]
-    final_prediction_list = list(zip(final_prediction_list, title_list, paragraph_list))
-    if len(final_prediction_list) > n:
-        prediction_list = final_prediction_list[:n]
-        return prediction_list
+def _n_best_predictions(final_predictions_sorted, n):
+    n = min(n, len(final_predictions_sorted))
+    final_prediction_list = []
+    for i in range(n):
+        curr_pred = (
+            final_predictions_sorted[i]["text"],
+            final_predictions_sorted[i]["title"],
+            final_predictions_sorted[i]["paragraph"],
+            final_predictions_sorted[i]["final_score"],
+        )
+        final_prediction_list.append(curr_pred)
     return final_prediction_list

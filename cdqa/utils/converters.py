@@ -47,7 +47,7 @@ def df2squad(df, squad_version="v1.1", output_dir=None, filename=None):
     json_data["version"] = squad_version
     json_data["data"] = []
 
-    for index, row in tqdm(df.iterrows()):
+    for idx, row in tqdm(df.iterrows()):
         temp = {"title": row["title"], "paragraphs": []}
         for paragraph in row["paragraphs"]:
             temp["paragraphs"].append({"context": paragraph, "qas": []})
@@ -60,7 +60,7 @@ def df2squad(df, squad_version="v1.1", output_dir=None, filename=None):
     return json_data
 
 
-def generate_squad_examples(question, closest_docs_indices, metadata, retrieve_by_doc):
+def generate_squad_examples(question, best_idx_scores, metadata, retrieve_by_doc):
     """
     Creates a SQuAD examples json object for a given for a given question using outputs of retriever and document database.
 
@@ -68,7 +68,7 @@ def generate_squad_examples(question, closest_docs_indices, metadata, retrieve_b
     ----------
     question : [type]
         [description]
-    closest_docs_indices : [type]
+    best_idx_scores : [type]
         [description]
     metadata : [type]
         [description]
@@ -82,16 +82,16 @@ def generate_squad_examples(question, closest_docs_indices, metadata, retrieve_b
     --------
     >>> from cdqa.utils.converter import generate_squad_examples
     >>> squad_examples = generate_squad_examples(question='Since when does the the Excellence Program of BNP Paribas exist?',
-                                         closest_docs_indices=[788, 408, 2419],
+                                         best_idx_scores=[(788, 1.2), (408, 0.4), (2419, 0.2)],
                                          metadata=df)
 
     """
 
     squad_examples = []
 
-    metadata_sliced = metadata.loc[closest_docs_indices]
+    metadata_sliced = metadata.loc[best_idx_scores.keys()]
 
-    for index, row in metadata_sliced.iterrows():
+    for idx, row in metadata_sliced.iterrows():
         temp = {"title": row["title"], "paragraphs": []}
 
         if retrieve_by_doc:
@@ -104,6 +104,7 @@ def generate_squad_examples(question, closest_docs_indices, metadata, retrieve_b
                                 "answers": [],
                                 "question": question,
                                 "id": str(uuid.uuid4()),
+                                "retriever_score": best_idx_scores[idx],
                             }
                         ],
                     }
@@ -113,7 +114,12 @@ def generate_squad_examples(question, closest_docs_indices, metadata, retrieve_b
                 {
                     "context": row["content"],
                     "qas": [
-                        {"answers": [], "question": question, "id": str(uuid.uuid4())}
+                        {
+                            "answers": [],
+                            "question": question,
+                            "id": str(uuid.uuid4()),
+                            "retriever_score": best_idx_scores[idx],
+                        }
                     ],
                 }
             ]

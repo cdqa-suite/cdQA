@@ -18,14 +18,14 @@ df = pd.read_csv(dataset_path, converters={"paragraphs": literal_eval})
 df = filter_paragraphs(df)
 
 cdqa_pipeline = QAPipeline(reader=reader_path)
-cdqa_pipeline.fit_retriever(X=df)
+cdqa_pipeline.fit_retriever(df=df)
 
 
 @app.route("/api", methods=["GET"])
 def api():
 
     query = request.args.get("query")
-    prediction = cdqa_pipeline.predict(X=query)
+    prediction = cdqa_pipeline.predict(query=query)
 
     return jsonify(
         query=query, answer=prediction[0], title=prediction[1], paragraph=prediction[2]
