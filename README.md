@@ -119,7 +119,7 @@ from cdqa.pipeline import QAPipeline
 
 df = pd.read_csv('your-custom-corpus-here.csv', converters={'paragraphs': literal_eval})
 
-cdqa_pipeline = QAPipeline(model='bert_qa_vCPU-sklearn.joblib')
+cdqa_pipeline = QAPipeline(reader='bert_qa_vCPU-sklearn.joblib')
 cdqa_pipeline.fit_retriever(df=df)
 ```
 
