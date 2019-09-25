@@ -126,7 +126,7 @@ cdqa_pipeline.fit_retriever(df=df)
 If you want to fine-tune the reader on your custom SQuAD-like annotated dataset:
 
 ```python
-cdqa_pipeline = QAPipeline(model='bert_qa_vGPU-sklearn.joblib')
+cdqa_pipeline = QAPipeline(reader='bert_qa_vGPU-sklearn.joblib')
 cdqa_pipeline.fit_reader('path-to-custom-squad-like-dataset.json')
 ```
 
@@ -144,7 +144,7 @@ cdqa_pipeline.predict(query='your question')
 
 To get the N best predictions:
 ```python
-cdqa_pipeline.predict(query='your questio', n_predictions=N)
+cdqa_pipeline.predict(query='your question', n_predictions=N)
 ```
 
 There is also the possibility to change the weight of the retriever score
@@ -208,9 +208,8 @@ Binder and Google Colaboratory provide temporary environments and may be slow to
 You can deploy a `cdQA` REST API by executing:
 
 ```shell
-# No \" or \' should be included in the paths
-export dataset_path=path-to-dataset.csv
-export reader_path=path-to-reader-model.joblib
+export dataset_path = 'path-to-dataset.csv'
+export reader_path = 'path-to-reader-model'
 
 FLASK_APP=api.py flask run -h 0.0.0.0
 ```
