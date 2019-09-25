@@ -29,13 +29,18 @@ class Test_converter:
     def get_assets_folder(self, download_test_assets):
         self.assets_folder = download_test_assets
 
-    def df_converter_check(self, df):
+    def df_converter_check(self, df, include_line_breaks=False):
         errors = []
         # replace assertions by conditions
         if not df.shape == (3, 2):
             errors.append("resulting dataframe has unexpected shape.")
         if not (isinstance(df.paragraphs[0][0], str) and isinstance(df.title[0], str)):
             errors.append("paragraph column content has wrong format.")
+        if include_line_breaks:
+            para_len = [len(df.paragraphs[i]) for i in range(df.shape[0])]
+            para_len.sort()
+            if not para_len == [144, 220, 265]:
+                errors.append(f"error in number of paragraphs : {para_len}")
 
         # assert no error message has been registered, else print messages
         assert not errors, "errors occured:\n{}".format("\n".join(errors))
@@ -47,3 +52,7 @@ class Test_converter:
     def test_pdf_converter(self):
         df = pdf_converter(directory_path=self.assets_folder)
         self.df_converter_check(df)
+        df_line_para = pdf_converter(
+            directory_path=self.assets_folder, include_line_breaks=True
+        )
+        self.df_converter_check(df_line_para, True)

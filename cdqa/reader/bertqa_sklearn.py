@@ -1310,10 +1310,16 @@ class BertQA(BaseEstimator):
             train_data, sampler=train_sampler, batch_size=self.train_batch_size
         )
 
-        num_train_optimization_steps = len(train_dataloader) // self.gradient_accumulation_steps * self.num_train_epochs
+        num_train_optimization_steps = (
+            len(train_dataloader)
+            // self.gradient_accumulation_steps
+            * self.num_train_epochs
+        )
 
         if self.local_rank != -1:
-            num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
+            num_train_optimization_steps = (
+                num_train_optimization_steps // torch.distributed.get_world_size()
+            )
 
         # Prepare optimizer
         param_optimizer = list(self.model.named_parameters())

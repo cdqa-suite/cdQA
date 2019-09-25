@@ -129,7 +129,37 @@ def generate_squad_examples(question, best_idx_scores, metadata, retrieve_by_doc
     return squad_examples
 
 
-def pdf_converter(directory_path):
+def pdf_converter(directory_path, min_length=200, include_line_breaks=False):
+    """
+    Function to convert PDFs to Dataframe with columns as title & paragraphs.
+
+    Parameters
+    ----------
+
+    min_length : integer
+        Minimum character length to be considered as a single paragraph
+
+    include_line_breaks: bool
+        To concatenate paragraphs less than min_length to a single paragraph
+
+
+
+    Returns
+    -------------
+    df : Dataframe
+
+
+    Description
+    -----------------
+    If include_line_breaks is set to True, paragraphs with character length
+    less than min_length (minimum character length of a paragraph) will be
+    considered as a line. Lines before or after each paragraph(length greater
+    than or equal to min_length) will be concatenated to a single paragraph to
+    form the list of paragraphs in Dataframe.
+
+    Else paragraphs are appended directly to form the list.
+
+    """
     list_file = os.listdir(directory_path)
     list_pdf = []
     for file in list_file:
@@ -141,12 +171,38 @@ def pdf_converter(directory_path):
             df.loc[i] = [pdf, None]
             raw = parser.from_file(os.path.join(directory_path, pdf))
             s = raw["content"]
-            paragraphs = re.split(u"\n(?=\u2028|[A-Z-0-9])", s)
+            paragraphs = re.split("\n(?=\u2028|[A-Z-0-9])", s)
             list_par = []
+            temp_para = ""  # variable that stores paragraphs with length<min_length
+            # (considered as a line)
             for p in paragraphs:
-                if len(p) >= 200:
-                    list_par.append(p.replace("\n", ""))
-                df.loc[i, "paragraphs"] = list_par
+                if not p.isspace():  # checking if paragraph is not only spaces
+                    if include_line_breaks:  # if True, check length of paragraph
+                        if len(p) >= min_length:
+                            if temp_para:
+                                # if True, append temp_para which holds concatenated
+                                # lines to form a paragraph before current paragraph p
+                                list_par.append(temp_para.strip())
+                                temp_para = (
+                                    ""
+                                )  # reset temp_para for new lines to be concatenated
+                                list_par.append(
+                                    p.replace("\n", "")
+                                )  # append current paragraph with length>min_length
+                            else:
+                                list_par.append(p.replace("\n", ""))
+                        else:
+                            # paragraph p (line) is concatenated to temp_para
+                            line = p.replace("\n", " ").strip()
+                            temp_para = temp_para + f" {line}"
+                    else:
+                        # appending paragraph p as is to list_par
+                        list_par.append(p.replace("\n", ""))
+            else:
+                if temp_para:
+                    list_par.append(temp_para.strip())
+
+            df.loc[i, "paragraphs"] = list_par
         except:
             print("Unexpected error:", sys.exc_info()[0])
             print("Unable to process file {}".format(pdf))
