@@ -28,7 +28,7 @@ class QAPipeline(BaseEstimator):
     retrieve_by_doc: bool (default: True). If Retriever will rank by documents
         or by paragraphs.
 
-    kwargs: kwargs for BertQA(), BertProcessor(), TfidfRetriever() and BM25Retriever
+    kwargs: kwargs for BertQA(), BertProcessor(), TfidfRetriever() and BM25Retriever()
         Please check documentation for these classes
 
     Examples

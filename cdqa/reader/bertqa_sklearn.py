@@ -1274,12 +1274,6 @@ class BertQA(BaseEstimator):
 
         global_step = 0
 
-        if self.verbose_logging:
-            logger.info("***** Running training *****")
-            logger.info("  Num orig examples = %d", len(train_examples))
-            logger.info("  Num split examples = %d", len(train_features))
-            logger.info("  Batch size = %d", self.train_batch_size)
-            logger.info("  Num steps = %d", num_train_optimization_steps)
         all_input_ids = torch.tensor(
             [f.input_ids for f in train_features], dtype=torch.long
         )
@@ -1320,6 +1314,13 @@ class BertQA(BaseEstimator):
             num_train_optimization_steps = (
                 num_train_optimization_steps // torch.distributed.get_world_size()
             )
+
+        if self.verbose_logging:
+            logger.info("***** Running training *****")
+            logger.info("  Num orig examples = %d", len(train_examples))
+            logger.info("  Num split examples = %d", len(train_features))
+            logger.info("  Batch size = %d", self.train_batch_size)
+            logger.info("  Num steps = %d", num_train_optimization_steps)
 
         # Prepare optimizer
         param_optimizer = list(self.model.named_parameters())
