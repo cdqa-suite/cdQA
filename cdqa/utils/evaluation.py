@@ -1,6 +1,7 @@
 """ Official evaluation script for v1.1 of the SQuAD dataset. """
 from __future__ import print_function
 from collections import Counter
+import torch
 import string
 import re
 import argparse
@@ -9,6 +10,7 @@ import json
 import sys
 import os
 
+import joblib
 from tqdm.autonotebook import tqdm
 
 
@@ -105,22 +107,21 @@ def evaluate(dataset, predictions, unique_pred=True):
     return {"exact_match": exact_match, "f1": f1}
 
 
-def evaluate_reader(dataset_file, prediction_file, expected_version="1.1"):
+def evaluate_reader(cdqa_pipeline, dataset_file, expected_version="1.1"):
     """Evaluation for SQuAD
 
     Parameters
     ----------
-    dataset_file : [type]
-        Dataset file
-    prediction_file : [type]
-        Prediction File
+    cdqa_pipeline: QAPipeline object
+        Pipeline with reader to be evaluated
+    dataset_file : str
+        path to json file in SQuAD format
     expected_version : str, optional
         [description], by default '1.1'
 
     Returns
     -------
-    [type]
-        [description]
+    A dictionary with exact match and f1 scores
     """
 
     with open(dataset_file, "r") as dataset_file:
@@ -134,10 +135,16 @@ def evaluate_reader(dataset_file, prediction_file, expected_version="1.1"):
                 file=sys.stderr,
             )
         dataset = dataset_json["data"]
-    with open(prediction_file, "r") as prediction_file:
-        predictions = json.load(prediction_file)
 
-    return evaluate(dataset, predictions)
+    if torch.cuda.is_available():
+        cdqa_pipeline.cuda()
+    reader = cdqa_pipeline.reader
+    processor = cdqa_pipeline.processor_predict
+    examples, features = processor.fit_transform(dataset)
+    preds = reader.predict((examples, features), return_all_preds=True)
+    all_predictions = {d['qas_id']: d['text'] for d in preds}
+
+    return evaluate(dataset, all_predictions)
 
 
 def evaluate_pipeline(

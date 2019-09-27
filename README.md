@@ -170,21 +170,21 @@ In order to evaluate models on your custom dataset you will need to annotate it.
 
     Please refer to our [`cdQA-annotator`](https://github.com/cdqa-suite/cdQA-annotator), a web-based annotator for closed-domain question answering datasets with SQuAD format.
 
-3. Evaluate the reader:
-
-    ```python
-    from cdqa.utils.evaluation import evaluate_reader
-
-    evaluate_reader(dataset_file='path-to-annotated-dataset.json', prediction_file='predictions.json')
-    ```
-
-4. Evaluate a whole pipeline object:
+3. Evaluate the pipeline object:
 
     ```python
     from cdqa.utils.evaluation import evaluate_pipeline
 
     evaluate_pipeline(cdqa_pipeline, 'path-to-annotated-dataset.json')
 
+    ```
+
+4. Evaluate the reader:
+
+    ```python
+    from cdqa.utils.evaluation import evaluate_reader
+
+    evaluate_reader(cdqa_pipeline, 'path-to-annotated-dataset.json')
     ```
 
 ## Notebook Examples
