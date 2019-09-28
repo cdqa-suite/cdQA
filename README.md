@@ -208,8 +208,8 @@ Binder and Google Colaboratory provide temporary environments and may be slow to
 You can deploy a `cdQA` REST API by executing:
 
 ```shell
-export dataset_path = 'path-to-dataset.csv'
-export reader_path = 'path-to-reader-model'
+export dataset_path=path-to-dataset.csv
+export reader_path=path-to-reader-model
 
 FLASK_APP=api.py flask run -h 0.0.0.0
 ```
