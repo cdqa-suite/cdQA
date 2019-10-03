@@ -10,7 +10,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 ![GitHub](https://img.shields.io/github/license/cdqa-suite/cdQA.svg)
 
-An End-To-End Closed Domain Question Answering System.
+An End-To-End Closed Domain Question Answering System. Built on top of the HuggingFace [transformers](https://github.com/huggingface/transformers) library.
 
 ## cdQA in details
 
@@ -242,7 +242,7 @@ Read our [Contributing Guidelines](.github/CONTRIBUTING.md).
 | :newspaper: Paper    | [Unsupervised Question Answering by Cloze Translation](https://arxiv.org/abs/1906.04980)                                                     | Patrick Lewis, Ludovic Denoyer, Sebastian Riedel                                       | 2019 |
 | :computer: Framework | [Scikit-learn: Machine Learning in Python](http://jmlr.csail.mit.edu/papers/v12/pedregosa11a.html)                                           | Pedregosa et al.                                                                       | 2011 |
 | :computer: Framework | [PyTorch](https://arxiv.org/abs/1906.04980)                                                                                                  | Adam Paszke, Sam Gross, Soumith Chintala, Gregory Chanan                               | 2016 |
-| :computer: Framework | [PyTorch Transformers: A library of state-of-the-art pretrained models for Natural Language Processing (NLP)](https://github.com/huggingface/pytorch-pretrained-BERT) | Hugging Face                                                                           | 2018 |
+| :computer: Framework | [Transformers: State-of-the-art Natural Language Processing for TensorFlow 2.0 and PyTorch.](https://github.com/huggingface/transformers) | Hugging Face                                                                           | 2018 |
 
 ## LICENSE
 
