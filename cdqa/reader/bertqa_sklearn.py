@@ -785,7 +785,7 @@ def write_predictions(
         best_dict["qas_id"] = example.qas_id
         best_dict["title"] = example.title
         best_dict["paragraph"] = example.paragraph
-        best_dict["retriever_score"] = example.retriever_score.item()
+        best_dict["retriever_score"] = float(example.retriever_score)
         best_dict["final_score"] = (1 - retriever_score_weight) * (
             best_dict["start_logit"] + best_dict["end_logit"]
         ) + retriever_score_weight * best_dict["retriever_score"]
