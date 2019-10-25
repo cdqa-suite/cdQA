@@ -49,8 +49,6 @@ def test_evaluate_pipeline():
 
     cdqa_pipeline = QAPipeline(reader="./models/bert_qa_vCPU-sklearn.joblib", n_jobs=-1)
     cdqa_pipeline.fit_retriever(df)
-    if torch.cuda.is_available():
-        cdqa_pipeline.cuda()
 
     eval_dict = evaluate_pipeline(cdqa_pipeline, "./test_data.json", output_dir=None)
 
