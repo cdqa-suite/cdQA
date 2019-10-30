@@ -13,13 +13,11 @@ def test_processor_functions():
     doc_stride = 128
     is_training = False
     verbose = False
-    n_jobs = -1
 
     examples = read_squad_examples(
         "./data/SQuAD_1.1/dev-v1.1.json",
         is_training=is_training,
         version_2_with_negative=False,
-        n_jobs=n_jobs,
     )
     assert len(examples) == 10570
 
@@ -31,6 +29,5 @@ def test_processor_functions():
         max_query_length,
         is_training,
         verbose,
-        n_jobs=n_jobs,
     )
     assert len(features) == 12006
