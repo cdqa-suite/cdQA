@@ -1,6 +1,6 @@
 from cdqa.utils.download import *
 from cdqa.reader.bertqa_sklearn import convert_examples_to_features, read_squad_examples
-from pytorch_pretrained_bert.tokenization import BertTokenizer
+from transformers import BertTokenizer
 
 
 def test_processor_functions():

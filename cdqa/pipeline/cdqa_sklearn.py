@@ -217,7 +217,10 @@ class QAPipeline(BaseEstimator):
     def dump_reader(self, filename):
         """ Dump reader model to a .joblib object
         """
+        self.cpu()
         joblib.dump(self.reader, filename)
+        if torch.cuda.is_available():
+            self.cuda()
 
     @staticmethod
     def _expand_paragraphs(df):

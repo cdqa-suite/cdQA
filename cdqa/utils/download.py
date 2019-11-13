@@ -64,7 +64,7 @@ def download_model(model="bert-squad_1.1", dir="."):
     ----------
     model: str
         Model to be download. It should be one of the models in the list:
-        'bert-squad1.1'
+        `bert-squad_1.1`, `distilbert-squad_1.1`
 
     dir: str
         Directory where the dataset will be stored
@@ -72,7 +72,8 @@ def download_model(model="bert-squad_1.1", dir="."):
     """
 
     models_url = {
-        "bert-squad_1.1": "https://github.com/cdqa-suite/cdQA/releases/download/bert_qa_vCPU/bert_qa_vCPU-sklearn.joblib"
+        "bert-squad_1.1": "https://github.com/cdqa-suite/cdQA/releases/download/bert_qa/bert_qa.joblib",
+        "distilbert-squad_1.1": "https://github.com/cdqa-suite/cdQA/releases/download/distilbert_qa/distilbert_qa.joblib"
     }
 
     if not model in models_url:

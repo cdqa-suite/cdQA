@@ -33,18 +33,13 @@ from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, Tenso
 from torch.utils.data.distributed import DistributedSampler
 from tqdm.autonotebook import tqdm, trange
 
-from pytorch_pretrained_bert.file_utils import (
-    PYTORCH_PRETRAINED_BERT_CACHE,
-    WEIGHTS_NAME,
-    CONFIG_NAME,
-)
-from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig
-from pytorch_pretrained_bert.optimization import BertAdam, WarmupLinearSchedule
-from pytorch_pretrained_bert.tokenization import (
-    BasicTokenizer,
-    BertTokenizer,
-    whitespace_tokenize,
-)
+from transformers import PYTORCH_PRETRAINED_BERT_CACHE, WEIGHTS_NAME, CONFIG_NAME
+
+from transformers import BertForQuestionAnswering, DistilBertForQuestionAnswering
+from transformers import BertConfig, DistilBertConfig
+from transformers import BertTokenizer, DistilBertTokenizer
+from transformers import AdamW, WarmupLinearSchedule
+from transformers.tokenization_bert import BasicTokenizer, whitespace_tokenize
 
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -260,6 +255,7 @@ def convert_examples_to_features(
     mask_padding_with_zero = True
 
     features = []
+
     for (example_index, example) in enumerate(examples):
         query_tokens = tokenizer.tokenize(example.question_text)
 
@@ -410,6 +406,31 @@ def convert_examples_to_features(
             if is_training and span_is_impossible:
                 start_position = cls_index
                 end_position = cls_index
+
+            if example_index < 20 and verbose:
+                logger.info("*** Example ***")
+                logger.info("unique_id: %s" % (unique_id))
+                logger.info("example_index: %s" % (example_index))
+                logger.info("doc_span_index: %s" % (doc_span_index))
+                logger.info("tokens: %s" % " ".join(tokens))
+                logger.info("token_to_orig_map: %s" % " ".join([
+                    "%d:%d" % (x, y) for (x, y) in token_to_orig_map.items()]))
+                logger.info("token_is_max_context: %s" % " ".join([
+                    "%d:%s" % (x, y) for (x, y) in token_is_max_context.items()
+                ]))
+                logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
+                logger.info(
+                    "input_mask: %s" % " ".join([str(x) for x in input_mask]))
+                logger.info(
+                    "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
+                if is_training and span_is_impossible:
+                    logger.info("impossible example")
+                if is_training and not span_is_impossible:
+                    answer_text = " ".join(tokens[start_position:(end_position + 1)])
+                    logger.info("start_position: %d" % (start_position))
+                    logger.info("end_position: %d" % (end_position))
+                    logger.info(
+                        "answer: %s" % (answer_text))
 
             features.append(
                 InputFeatures(
@@ -900,6 +921,20 @@ def _compute_softmax(scores):
     return probs
 
 
+def _n_best_predictions(final_predictions_sorted, n):
+    n = min(n, len(final_predictions_sorted))
+    final_prediction_list = []
+    for i in range(n):
+        curr_pred = (
+            final_predictions_sorted[i]["text"],
+            final_predictions_sorted[i]["title"],
+            final_predictions_sorted[i]["paragraph"],
+            final_predictions_sorted[i]["final_score"],
+        )
+        final_prediction_list.append(curr_pred)
+    return final_prediction_list
+
+
 class BertProcessor(BaseEstimator, TransformerMixin):
     """
     A scikit-learn transformer to convert SQuAD examples to BertQA input format.
@@ -1385,40 +1420,37 @@ class BertQA(BaseEstimator):
             logger.info("  Num split examples = %d", len(eval_features))
             logger.info("  Batch size = %d", self.predict_batch_size)
 
-        all_input_ids = torch.tensor(
-            [f.input_ids for f in eval_features], dtype=torch.long
-        )
-        all_input_mask = torch.tensor(
-            [f.input_mask for f in eval_features], dtype=torch.long
-        )
-        all_segment_ids = torch.tensor(
-            [f.segment_ids for f in eval_features], dtype=torch.long
-        )
+        all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
+        all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
+        all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
+        all_cls_index = torch.tensor([f.cls_index for f in eval_features], dtype=torch.long)
+        all_p_mask = torch.tensor([f.p_mask for f in eval_features], dtype=torch.float)
         all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
-        eval_data = TensorDataset(
-            all_input_ids, all_input_mask, all_segment_ids, all_example_index
-        )
+
+        eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
+                                  all_example_index, all_cls_index, all_p_mask)
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
-        eval_dataloader = DataLoader(
-            eval_data, sampler=eval_sampler, batch_size=self.predict_batch_size
-        )
+        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=self.predict_batch_size)
 
         self.model.to(self.device)
         self.model.eval()
         all_results = []
         if self.verbose_logging:
             logger.info("Start evaluating")
-        for input_ids, input_mask, segment_ids, example_indices in eval_dataloader:
+        for batch in eval_dataloader:
             if len(all_results) % 1000 == 0 and self.verbose_logging:
                 logger.info("Processing example: %d" % (len(all_results)))
-            input_ids = input_ids.to(self.device)
-            input_mask = input_mask.to(self.device)
-            segment_ids = segment_ids.to(self.device)
+            batch = tuple(t.to(self.device) for t in batch)
             with torch.no_grad():
-                batch_start_logits, batch_end_logits = self.model(
-                    input_ids, segment_ids, input_mask
-                )
+                inputs = {'input_ids':      batch[0],
+                          'attention_mask': batch[1]
+                          }
+                if 'distilbert' not in self.bert_model:
+                    inputs['token_type_ids'] = batch[2]
+                example_indices = batch[3]
+                batch_start_logits, batch_end_logits = self.model(**inputs)
+
             for i, example_index in enumerate(example_indices):
                 start_logits = batch_start_logits[i].detach().cpu().tolist()
                 end_logits = batch_end_logits[i].detach().cpu().tolist()
@@ -1468,17 +1500,3 @@ class BertQA(BaseEstimator):
             return final_predictions
 
         return best_prediction
-
-
-def _n_best_predictions(final_predictions_sorted, n):
-    n = min(n, len(final_predictions_sorted))
-    final_prediction_list = []
-    for i in range(n):
-        curr_pred = (
-            final_predictions_sorted[i]["text"],
-            final_predictions_sorted[i]["title"],
-            final_predictions_sorted[i]["paragraph"],
-            final_predictions_sorted[i]["final_score"],
-        )
-        final_prediction_list.append(curr_pred)
-    return final_prediction_list
