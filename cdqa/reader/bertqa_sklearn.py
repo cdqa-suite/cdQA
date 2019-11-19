@@ -38,7 +38,7 @@ from transformers import PYTORCH_PRETRAINED_BERT_CACHE, WEIGHTS_NAME, CONFIG_NAM
 from transformers import BertForQuestionAnswering, DistilBertForQuestionAnswering
 from transformers import BertConfig, DistilBertConfig
 from transformers import BertTokenizer, DistilBertTokenizer
-from transformers import AdamW, WarmupLinearSchedule
+from transformers import AdamW, get_linear_schedule_with_warmup
 from transformers.tokenization_bert import BasicTokenizer, whitespace_tokenize
 
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -1052,6 +1052,10 @@ class BertQA(BaseEstimator):
     warmup_proportion : float, optional
         Proportion of training to perform linear learning rate warmup for. E.g., 0.1 = 10%%
         of training. (the default is 0.1)
+    warmup_steps : int, optional
+        Linear warmup over warmup_steps.
+    adam_epsilon : float
+        Epsilon for Adam optimizer. (default: 1e-8)
     n_best_size : int, optional
         The total number of n-best predictions to generate in the nbest_predictions.json
         output file. (the default is 20)
@@ -1122,6 +1126,8 @@ class BertQA(BaseEstimator):
         learning_rate=5e-5,
         num_train_epochs=3.0,
         warmup_proportion=0.1,
+        warmup_steps=0,
+        adam_epsilon=1e-8,
         n_best_size=20,
         max_answer_length=30,
         verbose_logging=False,
@@ -1145,6 +1151,8 @@ class BertQA(BaseEstimator):
         self.learning_rate = learning_rate
         self.num_train_epochs = num_train_epochs
         self.warmup_proportion = warmup_proportion
+        self.warmup_steps = warmup_steps
+        self.adam_epsilon = adam_epsilon
         self.n_best_size = n_best_size
         self.max_answer_length = max_answer_length
         self.verbose_logging = verbose_logging
@@ -1344,12 +1352,8 @@ class BertQA(BaseEstimator):
                 warmup=self.warmup_proportion, t_total=num_train_optimization_steps
             )
         else:
-            optimizer = BertAdam(
-                optimizer_grouped_parameters,
-                lr=self.learning_rate,
-                warmup=self.warmup_proportion,
-                t_total=num_train_optimization_steps,
-            )
+            optimizer = AdamW(optimizer_grouped_parameters, lr=self.learning_rate, eps=self.adam_epsilon)
+            scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.warmup_steps, num_training_steps=num_train_optimization_steps)
 
         self.model.train()
         for _ in trange(int(self.num_train_epochs), desc="Epoch"):
@@ -1389,6 +1393,7 @@ class BertQA(BaseEstimator):
                         for param_group in optimizer.param_groups:
                             param_group["lr"] = lr_this_step
                     optimizer.step()
+                    scheduler.step()  # Update learning rate schedule
                     optimizer.zero_grad()
                     global_step += 1
 
