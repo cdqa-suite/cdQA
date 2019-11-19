@@ -31,6 +31,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, TensorDataset
 from torch.utils.data.distributed import DistributedSampler
+from torch.optim.lr_scheduler import LambdaLR
 from tqdm.autonotebook import tqdm, trange
 
 from transformers import PYTORCH_PRETRAINED_BERT_CACHE, WEIGHTS_NAME, CONFIG_NAME
@@ -38,7 +39,7 @@ from transformers import PYTORCH_PRETRAINED_BERT_CACHE, WEIGHTS_NAME, CONFIG_NAM
 from transformers import BertForQuestionAnswering, DistilBertForQuestionAnswering
 from transformers import BertConfig, DistilBertConfig
 from transformers import BertTokenizer, DistilBertTokenizer
-from transformers import AdamW, get_linear_schedule_with_warmup
+from transformers import AdamW
 from transformers.tokenization_bert import BasicTokenizer, whitespace_tokenize
 
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -934,6 +935,16 @@ def _n_best_predictions(final_predictions_sorted, n):
         final_prediction_list.append(curr_pred)
     return final_prediction_list
 
+def get_linear_schedule_with_warmup(optimizer, num_warmup_steps, num_training_steps, last_epoch=-1):
+    """ Create a schedule with a learning rate that decreases linearly after
+    linearly increasing during a warmup period.
+    """
+    def lr_lambda(current_step):
+        if current_step < num_warmup_steps:
+            return float(current_step) / float(max(1, num_warmup_steps))
+        return max(0.0, float(num_training_steps - current_step) / float(max(1, num_training_steps - num_warmup_steps)))
+
+    return LambdaLR(optimizer, lr_lambda, last_epoch)
 
 class BertProcessor(BaseEstimator, TransformerMixin):
     """
