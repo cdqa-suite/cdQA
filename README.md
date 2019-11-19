@@ -106,6 +106,9 @@ download_bnpp_data(dir=directory)
 
 # Downloading pre-trained BERT fine-tuned on SQuAD 1.1
 download_model('bert-squad_1.1', dir=directory)
+
+# Downloading pre-trained DistilBERT fine-tuned on SQuAD 1.1
+download_model('distilbert-squad_1.1', dir=directory)
 ```
 
 ### Training models
@@ -119,14 +122,14 @@ from cdqa.pipeline import QAPipeline
 
 df = pd.read_csv('your-custom-corpus-here.csv', converters={'paragraphs': literal_eval})
 
-cdqa_pipeline = QAPipeline(reader='bert_qa_vCPU-sklearn.joblib')
+cdqa_pipeline = QAPipeline(reader='bert_qa.joblib') # use 'distilbert_qa.joblib' for DistilBERT instead of BERT
 cdqa_pipeline.fit_retriever(df=df)
 ```
 
 If you want to fine-tune the reader on your custom SQuAD-like annotated dataset:
 
 ```python
-cdqa_pipeline = QAPipeline(reader='bert_qa_vGPU-sklearn.joblib')
+cdqa_pipeline = QAPipeline(reader='bert_qa.joblib') # use 'distilbert_qa.joblib' for DistilBERT instead of BERT
 cdqa_pipeline.fit_reader('path-to-custom-squad-like-dataset.json')
 ```
 
