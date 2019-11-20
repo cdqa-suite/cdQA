@@ -1379,12 +1379,14 @@ class BertQA(BaseEstimator):
                     batch = tuple(
                         t.to(self.device) for t in batch
                     )  # multi-gpu does scattering it-self
-                input_ids, input_mask, segment_ids, start_positions, end_positions = (
-                    batch
-                )
-                loss = self.model(
-                    input_ids, segment_ids, input_mask, start_positions, end_positions
-                )
+                inputs = {'input_ids':       batch[0],
+                          'attention_mask':  batch[1],
+                          'start_positions': batch[3],
+                          'end_positions':   batch[4]}
+                if 'distilbert' not in self.bert_model:
+                    inputs['token_type_ids'] = batch[2]
+                outputs = self.model(**inputs)
+                loss = outputs[0]
                 if self.n_gpu > 1:
                     loss = loss.mean()  # mean() to average on multi-gpu.
                 if self.gradient_accumulation_steps > 1:
