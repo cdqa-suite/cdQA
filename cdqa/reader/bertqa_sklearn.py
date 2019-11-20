@@ -31,6 +31,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, TensorDataset
 from torch.utils.data.distributed import DistributedSampler
+from torch.optim.lr_scheduler import LambdaLR
 from tqdm.autonotebook import tqdm, trange
 
 from transformers import PYTORCH_PRETRAINED_BERT_CACHE, WEIGHTS_NAME, CONFIG_NAME
@@ -38,7 +39,7 @@ from transformers import PYTORCH_PRETRAINED_BERT_CACHE, WEIGHTS_NAME, CONFIG_NAM
 from transformers import BertForQuestionAnswering, DistilBertForQuestionAnswering
 from transformers import BertConfig, DistilBertConfig
 from transformers import BertTokenizer, DistilBertTokenizer
-from transformers import AdamW, WarmupLinearSchedule
+from transformers import AdamW
 from transformers.tokenization_bert import BasicTokenizer, whitespace_tokenize
 
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -934,6 +935,16 @@ def _n_best_predictions(final_predictions_sorted, n):
         final_prediction_list.append(curr_pred)
     return final_prediction_list
 
+def get_linear_schedule_with_warmup(optimizer, num_warmup_steps, num_training_steps, last_epoch=-1):
+    """ Create a schedule with a learning rate that decreases linearly after
+    linearly increasing during a warmup period.
+    """
+    def lr_lambda(current_step):
+        if current_step < num_warmup_steps:
+            return float(current_step) / float(max(1, num_warmup_steps))
+        return max(0.0, float(num_training_steps - current_step) / float(max(1, num_training_steps - num_warmup_steps)))
+
+    return LambdaLR(optimizer, lr_lambda, last_epoch)
 
 class BertProcessor(BaseEstimator, TransformerMixin):
     """
@@ -1052,6 +1063,10 @@ class BertQA(BaseEstimator):
     warmup_proportion : float, optional
         Proportion of training to perform linear learning rate warmup for. E.g., 0.1 = 10%%
         of training. (the default is 0.1)
+    warmup_steps : int, optional
+        Linear warmup over warmup_steps.
+    adam_epsilon : float
+        Epsilon for Adam optimizer. (default: 1e-8)
     n_best_size : int, optional
         The total number of n-best predictions to generate in the nbest_predictions.json
         output file. (the default is 20)
@@ -1122,6 +1137,8 @@ class BertQA(BaseEstimator):
         learning_rate=5e-5,
         num_train_epochs=3.0,
         warmup_proportion=0.1,
+        warmup_steps=0,
+        adam_epsilon=1e-8,
         n_best_size=20,
         max_answer_length=30,
         verbose_logging=False,
@@ -1145,6 +1162,8 @@ class BertQA(BaseEstimator):
         self.learning_rate = learning_rate
         self.num_train_epochs = num_train_epochs
         self.warmup_proportion = warmup_proportion
+        self.warmup_steps = warmup_steps
+        self.adam_epsilon = adam_epsilon
         self.n_best_size = n_best_size
         self.max_answer_length = max_answer_length
         self.verbose_logging = verbose_logging
@@ -1344,12 +1363,8 @@ class BertQA(BaseEstimator):
                 warmup=self.warmup_proportion, t_total=num_train_optimization_steps
             )
         else:
-            optimizer = BertAdam(
-                optimizer_grouped_parameters,
-                lr=self.learning_rate,
-                warmup=self.warmup_proportion,
-                t_total=num_train_optimization_steps,
-            )
+            optimizer = AdamW(optimizer_grouped_parameters, lr=self.learning_rate, eps=self.adam_epsilon)
+            scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.warmup_steps, num_training_steps=num_train_optimization_steps)
 
         self.model.train()
         for _ in trange(int(self.num_train_epochs), desc="Epoch"):
@@ -1364,12 +1379,14 @@ class BertQA(BaseEstimator):
                     batch = tuple(
                         t.to(self.device) for t in batch
                     )  # multi-gpu does scattering it-self
-                input_ids, input_mask, segment_ids, start_positions, end_positions = (
-                    batch
-                )
-                loss = self.model(
-                    input_ids, segment_ids, input_mask, start_positions, end_positions
-                )
+                inputs = {'input_ids':       batch[0],
+                          'attention_mask':  batch[1],
+                          'start_positions': batch[3],
+                          'end_positions':   batch[4]}
+                if 'distilbert' not in self.bert_model:
+                    inputs['token_type_ids'] = batch[2]
+                outputs = self.model(**inputs)
+                loss = outputs[0]
                 if self.n_gpu > 1:
                     loss = loss.mean()  # mean() to average on multi-gpu.
                 if self.gradient_accumulation_steps > 1:
@@ -1389,6 +1406,7 @@ class BertQA(BaseEstimator):
                         for param_group in optimizer.param_groups:
                             param_group["lr"] = lr_this_step
                     optimizer.step()
+                    scheduler.step()  # Update learning rate schedule
                     optimizer.zero_grad()
                     global_step += 1
 
