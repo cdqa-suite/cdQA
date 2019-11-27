@@ -3,7 +3,7 @@ flask_cors==3.0.8
 joblib==0.13.2
 pandas==0.25.0
 prettytable==0.7.2
-transformers>=2.1.1
+transformers==2.1.1
 scikit_learn==0.21.2
 tika==1.19
 torch>=1.2.0
