@@ -168,7 +168,7 @@ def pdf_converter(directory_path, min_length=200, include_line_breaks=False):
     df = pd.DataFrame(columns=["title", "paragraphs"])
     for i, pdf in enumerate(list_pdf):
         try:
-            df.loc[i] = [pdf, None]
+            df.loc[i] = [pdf.replace(".pdf",''), None]
             raw = parser.from_file(os.path.join(directory_path, pdf))
             s = raw["content"]
             paragraphs = re.split("\n(?=\u2028|[A-Z-0-9])", s)
