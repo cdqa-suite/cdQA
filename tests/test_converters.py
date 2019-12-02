@@ -39,7 +39,7 @@ class Test_converter:
         if include_line_breaks:
             para_len = [len(df.paragraphs[i]) for i in range(df.shape[0])]
             para_len.sort()
-            if not para_len == [144, 220, 265]:
+            if not para_len == [58, 80, 87]:
                 errors.append(f"error in number of paragraphs : {para_len}")
 
         # assert no error message has been registered, else print messages

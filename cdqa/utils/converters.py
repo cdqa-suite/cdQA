@@ -170,8 +170,8 @@ def pdf_converter(directory_path, min_length=200, include_line_breaks=False):
         try:
             df.loc[i] = [pdf.replace(".pdf",''), None]
             raw = parser.from_file(os.path.join(directory_path, pdf))
-            s = raw["content"]
-            paragraphs = re.split("\n(?=\u2028|[A-Z-0-9])", s)
+            s = raw["content"].strip()
+            paragraphs = re.split("\n\n(?=\u2028|[A-Z-0-9])", s)
             list_par = []
             temp_para = ""  # variable that stores paragraphs with length<min_length
             # (considered as a line)
@@ -198,9 +198,9 @@ def pdf_converter(directory_path, min_length=200, include_line_breaks=False):
                     else:
                         # appending paragraph p as is to list_par
                         list_par.append(p.replace("\n", ""))
-            else:
-                if temp_para:
-                    list_par.append(temp_para.strip())
+                else:
+                    if temp_para:
+                        list_par.append(temp_para.strip())
 
             df.loc[i, "paragraphs"] = list_par
         except:
