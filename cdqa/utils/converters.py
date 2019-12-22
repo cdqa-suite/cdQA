@@ -35,7 +35,8 @@ def df2squad(df, squad_version="v1.1", output_dir=None, filename=None):
      --------
      >>> from ast import literal_eval
      >>> import pandas as pd
-     >>> from cdqa.utils.converter import df2squad, filter_paragraphs
+     >>> from cdqa.utils.converters import df2squad
+     >>> from cdqa.utils.filters import filter_paragraphs
 
      >>> df = pd.read_csv('../data/bnpp_newsroom_v1.1/bnpp_newsroom-v1.1.csv', converters={'paragraphs': literal_eval})
      >>> df['paragraphs'] = df['paragraphs'].apply(filter_paragraphs)
@@ -80,7 +81,7 @@ def generate_squad_examples(question, best_idx_scores, metadata, retrieve_by_doc
 
     Examples
     --------
-    >>> from cdqa.utils.converter import generate_squad_examples
+    >>> from cdqa.utils.converters import generate_squad_examples
     >>> squad_examples = generate_squad_examples(question='Since when does the the Excellence Program of BNP Paribas exist?',
                                          best_idx_scores=[(788, 1.2), (408, 0.4), (2419, 0.2)],
                                          metadata=df)
