@@ -122,7 +122,7 @@ from cdqa.pipeline import QAPipeline
 
 df = pd.read_csv('your-custom-corpus-here.csv', converters={'paragraphs': literal_eval})
 
-cdqa_pipeline = QAPipeline(reader='bert_qa.joblib') # use 'distilbert_qa.joblib' for DistilBERT instead of BERT
+cdqa_pipeline = QAPipeline(retriever='bm25', reader='bert_qa.joblib') # you can chose your retriever and reader
 cdqa_pipeline.fit_retriever(df=df)
 ```
 
