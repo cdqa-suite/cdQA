@@ -63,7 +63,7 @@ def df2squad(df, squad_version="v1.1", output_dir=None, filename=None):
 
 def generate_squad_examples(question, best_idx_scores, metadata, retrieve_by_doc):
     """
-    Creates a SQuAD examples json object for a given for a given question using outputs of retriever and document database.
+    Creates a SQuAD examples json object for a given question using outputs of retriever and document database.
 
     Parameters
     ----------
